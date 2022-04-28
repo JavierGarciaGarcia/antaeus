@@ -8,8 +8,10 @@ import io.javalin.Javalin
 import io.javalin.apibuilder.ApiBuilder.get
 import io.javalin.apibuilder.ApiBuilder.path
 import io.pleo.antaeus.core.exceptions.EntityNotFoundException
+import io.pleo.antaeus.core.exceptions.StatusNotFoundException
 import io.pleo.antaeus.core.services.CustomerService
 import io.pleo.antaeus.core.services.InvoiceService
+import io.pleo.antaeus.models.InvoiceStatus
 import mu.KotlinLogging
 
 private val logger = KotlinLogging.logger {}
@@ -35,6 +37,9 @@ class AntaeusRest(
             // Unexpected exception: return HTTP 500
             exception(Exception::class.java) { e, _ ->
                 logger.error(e) { "Internal server error" }
+            }
+            exception(StatusNotFoundException::class.java) { _, ctx ->
+                ctx.status(400)
             }
             // On 404: return message
             error(404) { ctx -> ctx.json("not found") }
@@ -64,6 +69,11 @@ class AntaeusRest(
                         // URL: /rest/v1/invoices/{:id}
                         get(":id") {
                             it.json(invoiceService.fetch(it.pathParam("id").toInt()))
+                        }
+
+                        //URL: /rest/v1/invoices/status/{:status}
+                        get("/status/:status") {
+                            it.json(invoiceService.fetchByStatus(it.pathParam("status")))
                         }
                     }
 
