@@ -86,3 +86,10 @@ The code given is structured as follows. Feel free however to modify the structu
 * [Sqlite3](https://sqlite.org/index.html) - Database storage engine
 
 Happy hacking 😁!
+
+## Updates in the code
+I've spent the last 8-9 hours working in the challenge and include the following updates:
+* Implement the solution using asynchronous programming, using kotlin coroutines 
+* Include circuit breaker to add a protection layer over the external provider
+* Usage of keyset pagination to avoid database issues when the dataset will grow
+* Use krontab library to handle the scheduled execution
