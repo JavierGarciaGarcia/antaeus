@@ -8,7 +8,9 @@ import io.pleo.antaeus.core.exceptions.InvoiceNotFoundException
 import io.pleo.antaeus.core.exceptions.StatusNotFoundException
 import io.pleo.antaeus.data.AntaeusDal
 import io.pleo.antaeus.models.Invoice
+import io.pleo.antaeus.models.InvoicePage
 import io.pleo.antaeus.models.InvoiceStatus
+import io.pleo.antaeus.data.constants.DEFAULT_PAGE_SIZE
 
 class InvoiceService(private val dal: AntaeusDal) {
     fun fetchAll(): List<Invoice> {
@@ -22,6 +24,11 @@ class InvoiceService(private val dal: AntaeusDal) {
     fun fetchByStatus(status: String): List<Invoice> {
         val validStatus : InvoiceStatus = translateStatus(status)
         return dal.fetchInvoicesByStatus(validStatus)
+    }
+
+    fun fetchPageByStatus(status: String, pageSize: Int = DEFAULT_PAGE_SIZE, marker: Int?): InvoicePage {
+        val validStatus : InvoiceStatus = translateStatus(status)
+        return dal.fetchInvoicePagesByStatus(validStatus, pageSize, marker)
     }
 
     fun updateStatus(id: Int, newStatus: String): Invoice? {

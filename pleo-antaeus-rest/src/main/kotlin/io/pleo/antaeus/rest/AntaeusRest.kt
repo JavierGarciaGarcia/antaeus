@@ -81,6 +81,10 @@ class AntaeusRest(
                         post("/pay/:id") {
                             it.json(billingService.processInvoice(it.pathParam("id").toInt()))
                         }
+
+                        post("/pay/start/:status") {
+                            it.json(billingService.processInvoicesByStatus(it.pathParam("status")))
+                        }
                     }
 
                     path("customers") {

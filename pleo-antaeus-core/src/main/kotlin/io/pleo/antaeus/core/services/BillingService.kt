@@ -6,7 +6,9 @@ import io.pleo.antaeus.core.exceptions.CurrencyMismatchException
 import io.pleo.antaeus.core.exceptions.CustomerNotFoundException
 import io.pleo.antaeus.core.exceptions.NetworkException
 import io.pleo.antaeus.core.external.PaymentProvider
+import io.pleo.antaeus.data.constants.DEFAULT_PAGE_SIZE
 import io.pleo.antaeus.models.Invoice
+import io.pleo.antaeus.models.InvoicePage
 import io.pleo.antaeus.models.InvoiceStatus
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.asFlow
@@ -25,8 +27,14 @@ class BillingService(
     private val MAX_DELAY = 1000L
     private val logger = KotlinLogging.logger {}
 
-    fun processInvoicesByStatus(status: String): Boolean {
-        return processInvoices(getInvoices(status))
+    fun processInvoicesByStatus(status: String, pageSize: Int = DEFAULT_PAGE_SIZE): Boolean {
+        var result = true
+        var currentPage: InvoicePage? = null
+        while(!hasProcessedEverything(currentPage)) {
+            currentPage = getNextPage(status, pageSize, getCurrentMarker(currentPage))
+            result = result && processInvoices(currentPage.invoices)
+        }
+        return result
     }
 
     fun processInvoice(id: Int): Boolean {
@@ -37,7 +45,9 @@ class BillingService(
         listOf(invoiceService.fetch(id))
             .filter { it.status != InvoiceStatus.PAID }
 
-    private fun getInvoices(status: String): List<Invoice> = invoiceService.fetchByStatus(status)
+    private fun getNextPage(status: String, pageSize: Int, marker: Int?): InvoicePage = invoiceService.fetchPageByStatus(status = status, marker = marker, pageSize = pageSize)
+    private fun hasProcessedEverything(currentPage: InvoicePage?): Boolean = currentPage?.isLast ?: false
+    private fun getCurrentMarker(invoicePage: InvoicePage?) = invoicePage?.marker
 
     private fun processInvoices(invoices: List<Invoice>): Boolean = runBlocking {
         return@runBlocking processInvoicesFlow(invoices)
