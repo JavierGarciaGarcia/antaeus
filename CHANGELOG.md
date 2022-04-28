@@ -1,5 +1,8 @@
 # CHANGELOG
 
+## 1.2.0
+* Improve http responses
+
 ## 1.1.0
 * Included circuit breaker support (https://resilience4j.readme.io/docs/getting-started-4) for calling payment provider
 * Included keyset pagination (https://use-the-index-luke.com/no-offset) for iterating over invoices list

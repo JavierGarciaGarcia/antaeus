@@ -34,6 +34,7 @@ class AntaeusRest(
             // InvoiceNotFoundException: return 404 HTTP status code
             exception(EntityNotFoundException::class.java) { _, ctx ->
                 ctx.status(404)
+                ctx.json("Entity not found")
             }
             // Unexpected exception: return HTTP 500
             exception(Exception::class.java) { e, _ ->
@@ -41,6 +42,7 @@ class AntaeusRest(
             }
             exception(StatusNotFoundException::class.java) { _, ctx ->
                 ctx.status(400)
+                ctx.json("Invalid status")
             }
             // On 404: return message
             error(404) { ctx -> ctx.json("not found") }
@@ -69,7 +71,14 @@ class AntaeusRest(
 
                         // URL: /rest/v1/invoices/{:id}
                         get(":id") {
-                            it.json(invoiceService.fetch(it.pathParam("id").toInt()))
+                            val invoice = invoiceService.fetch(it.pathParam("id").toInt())
+                            if (invoice != null) {
+                                it.json(invoiceService.fetch(it.pathParam("id").toInt()))
+                            } else {
+                                it.status(404)
+                                it.json("Invoice not found")
+                            }
+
                         }
 
                         //URL: /rest/v1/invoices/status/{:status}
@@ -79,11 +88,25 @@ class AntaeusRest(
 
                         //URL: /rest/v1/invoices/pay/{:id}
                         post("/pay/:id") {
-                            it.json(billingService.processInvoice(it.pathParam("id").toInt()))
+                            val result = billingService.processInvoice(it.pathParam("id").toInt())
+                            if (result) {
+                                it.status(200)
+                                it.json("The invoice has being paid correctly")
+                            } else {
+                                it.status(202)
+                                it.json("The invoice cannot be paid. Please consult the payment provider")
+                            }
                         }
 
                         post("/pay/start/:status") {
-                            it.json(billingService.processInvoicesByStatus(it.pathParam("status")))
+                            val result = billingService.processInvoicesByStatus(it.pathParam("status"))
+                            if (result) {
+                                it.status(200)
+                                it.json("The invoices have being paid correctly")
+                            } else {
+                                it.status(202)
+                                it.json("Some of the invoices cannot be paid. Please consult the payment provider")
+                            }
                         }
                     }
 
