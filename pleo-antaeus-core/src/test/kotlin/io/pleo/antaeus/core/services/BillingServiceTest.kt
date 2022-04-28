@@ -33,6 +33,15 @@ class BillingServiceTest {
     }
 
     @Test
+    fun `should do not call paymentProvider with an already paid invoice`() {
+        val invoice = expectAlreadyPaidInvoice(1)
+        billingService.processInvoice(invoice.id)
+        verify(exactly = 0){
+            paymentProvider.charge(invoice)
+        }
+    }
+
+    @Test
     fun `should update invoice status to missing customer to a invoice list when payment service throws missing customer exception`() {
         val invoice = anInvoice(1, InvoiceStatus.PENDING)
         expectMissingCustomerException(invoice)
@@ -135,6 +144,14 @@ class BillingServiceTest {
             } returns invoice
         }
         return expectedInvoices
+    }
+
+    private fun expectAlreadyPaidInvoice(id: Int): Invoice {
+        val paidInvoice = anInvoice(id, InvoiceStatus.PAID)
+        every {
+            invoiceService.fetch(id)
+        } returns paidInvoice
+        return paidInvoice
     }
 
     private fun expectMissingCustomerException(invoice: Invoice) {
