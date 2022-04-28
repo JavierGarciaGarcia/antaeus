@@ -10,11 +10,9 @@ import io.pleo.antaeus.data.constants.DEFAULT_PAGE_SIZE
 import io.pleo.antaeus.models.Invoice
 import io.pleo.antaeus.models.InvoicePage
 import io.pleo.antaeus.models.InvoiceStatus
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.retryWhen
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.runBlocking
 import mu.KotlinLogging
 
@@ -66,6 +64,7 @@ class BillingService(
                 logger.error(it) { "Exception processing the invoices" }
                 result = false
             }
+            .flowOn(Dispatchers.IO)
             .collect { result = result && it }
         return result
     }

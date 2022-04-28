@@ -1,5 +1,8 @@
 # CHANGELOG
 
+## 1.2.1
+* fix issue to make the invoice process into a new thread
+
 ## 1.2.0
 * Improve http responses
 
