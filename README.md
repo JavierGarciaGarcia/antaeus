@@ -93,3 +93,22 @@ I've spent the last 8-9 hours working in the challenge and include the following
 * Include circuit breaker to add a protection layer over the external provider
 * Usage of keyset pagination to avoid database issues when the dataset will grow
 * Use krontab library to handle the scheduled execution
+
+### Why asynchronous
+The code has been designed and developed thinking in how the current solution can grow and can be used with real data. 
+Calling a third party component (payment provider) could be something that consume CPU or take time, so using asynchronous 
+programming will help the application to not keeping the main thread waiting and not waste CPU in that
+
+Among with that, calling an external service is something that could include extra mechanism to protect the external service
+For that, I've decided to include a circuit breaker, so we will give some time to the external service to recover in case of unexpected 
+behavior
+
+### Keyset pagination and large datasets
+For iterating over large datasets in databases the common approach is using pagination, so the application will retrieve pages
+instead of the hole dataset
+When the dataset is huge and could be thousands of pages, databases suffer an issue known as "deep pagination issue", meaning that 
+even using pagination to iterate over all the dataset, the databse suffer when tries to access latest pages
+In order to fix that, one solution is use keyset pagination. The base idea is not use the offset pagination but include extra filters
+in the query to move between pages.
+The limitation of keyset pagination is the impossibility to access a specific page directly, but since the feature don't require that, 
+the usage of keyset pagination is possible and recommended
