@@ -123,6 +123,21 @@ class AntaeusRest(
                                 it.json("The customer's invoices cannot be paid. Please consult the payment provider")
                             }
                         }
+
+                        //URL: /rest/v1/payments/customers/{:id}
+                        post("/customers/:id/status/:status") {
+                            val result = billingService.proccessInvoicesByCustomer(
+                                customer = it.pathParam("id").toInt(),
+                                status = it.pathParam("status")
+                            )
+                            if (result) {
+                                it.status(200)
+                                it.json("The customer's invoices have been paid correctly")
+                            } else {
+                                it.status(202)
+                                it.json("The customer's invoices cannot be paid. Please consult the payment provider")
+                            }
+                        }
                     }
 
                     path("customers") {

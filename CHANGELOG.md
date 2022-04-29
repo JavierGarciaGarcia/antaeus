@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 1.3.1
+* fix issue in customer payments endpoint
+* add new endpoint to pay all invoices for a specific type for a client
+
 ## 1.3.0
 * add new endpoint to pay for a specific customer
 * regroup endpoints

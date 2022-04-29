@@ -35,11 +35,13 @@ class BillingService(
         return result
     }
 
-    fun proccessInvoicesByCustomer(customer: Int, pageSize: Int = DEFAULT_PAGE_SIZE): Boolean {
+    fun proccessInvoicesByCustomer(customer: Int,
+                                   status: String = InvoiceStatus.PENDING.toString(),
+                                   pageSize: Int = DEFAULT_PAGE_SIZE): Boolean {
         var result = true
         var currentPage: InvoicePage? = null
         while(!hasProcessedEverything(currentPage)) {
-            currentPage = getNextCustomerPage(customer, pageSize, getCurrentMarker(currentPage))
+            currentPage = getNextCustomerPage(customer, status, pageSize, getCurrentMarker(currentPage))
             result = result && processInvoices(currentPage.invoices)
         }
         return result
@@ -55,8 +57,8 @@ class BillingService(
 
     private fun getNextStatusPage(status: String, pageSize: Int, marker: Int?): InvoicePage =
         invoiceService.fetchPageByStatus(status = status, marker = marker, pageSize = pageSize)
-    private fun getNextCustomerPage(customer: Int, pageSize: Int, marker: Int?): InvoicePage =
-        invoiceService.fetchPageByCustomer(customer = customer, marker = marker, pageSize = pageSize)
+    private fun getNextCustomerPage(customer: Int, status: String, pageSize: Int, marker: Int?): InvoicePage =
+        invoiceService.fetchPageByCustomer(customer = customer, status = status, marker = marker, pageSize = pageSize)
     private fun hasProcessedEverything(currentPage: InvoicePage?): Boolean = currentPage?.isLast ?: false
     private fun getCurrentMarker(invoicePage: InvoicePage?) = invoicePage?.marker
 

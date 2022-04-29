@@ -44,6 +44,27 @@ class InvoiceServiceTest {
     }
 
     @Test
+    fun `fetch will throw if status is not found fetching by customer`() {
+        assertThrows<StatusNotFoundException> {
+            invoiceService.fetchPageByCustomer(
+                customer = 1,
+                status = "INVALID STATUS",
+                marker = null
+            )
+        }
+    }
+
+    @Test
+    fun `fetch will throw if status is not found fetching page by status`() {
+        assertThrows<StatusNotFoundException> {
+            invoiceService.fetchPageByStatus(
+                status = "INVALID STATUS",
+                marker = null
+            )
+        }
+    }
+
+    @Test
     fun `will return invoice by status`() {
         val invoices = invoiceService.fetchByStatus(InvoiceStatus.PAID.toString())
         Assertions.assertAll(
@@ -74,10 +95,10 @@ class InvoiceServiceTest {
     @Test
     fun `will return 2 pages of PENDING invoices when look for specific customer`() {
 
-        every { dal.fetchInvoicePagesByCustomer(1, 50, null) } returns
+        every { dal.fetchInvoicePagesByCustomer(customer = 1, status = InvoiceStatus.PENDING, pageSize = 50, marker = null) } returns
                 anInvoicePage(InvoiceStatus.PENDING, false, 50)
 
-        every { dal.fetchInvoicePagesByCustomer(1, 50, 49) } returns
+        every { dal.fetchInvoicePagesByCustomer(customer = 1, status = InvoiceStatus.PENDING, pageSize = 50, marker = 49) } returns
                 anInvoicePage(InvoiceStatus.PENDING, true, 50)
 
         val page1 = invoiceService.fetchPageByCustomer(customer = 1, pageSize = 50, marker = null)
