@@ -88,11 +88,22 @@ The code given is structured as follows. Feel free however to modify the structu
 Happy hacking 😁!
 
 ## Updates in the code
-I've spent the last 8-9 hours working in the challenge and include the following updates:
+I've spent the last 10-12 hours working in the challenge and include the following updates:
 * Implement the solution using asynchronous programming, using kotlin coroutines 
 * Include circuit breaker to add a protection layer over the external provider
 * Usage of keyset pagination to avoid database issues when the dataset will grow
 * Use krontab library to handle the scheduled execution
+
+## Endpoints
+* /rest/v1/invoices : get all invoices
+* /rest/v1/invoices/{:id} : get an specific invoice
+* /rest/v1/invoices/status/{:status} : get all invoices of a specific status
+* /rest/v1/payments/invoices/{:id} : try to pay the specific invoice
+* /rest/v1/payments/invoices/status/{:status} : pay all the invoices of the specific status
+* /rest/v1/payments/customers/{:id} : pay all the invoices of the specific customer
+* /rest/v1/payments/customers/{:id}/status/{:status} : pay all the invoices of specific status for a specific customer
+* /rest/v1/customers : get all the customers
+* /rest/v1/customers/{:id} : get a specific customer
 
 ### Why asynchronous
 The code has been designed and developed thinking in how the current solution can grow and can be used with real data. 

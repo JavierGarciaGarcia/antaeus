@@ -124,7 +124,7 @@ class AntaeusRest(
                             }
                         }
 
-                        //URL: /rest/v1/payments/customers/{:id}
+                        //URL: /rest/v1/payments/customers/{:id}/status/{:status}
                         post("/customers/:id/status/:status") {
                             val result = billingService.proccessInvoicesByCustomer(
                                 customer = it.pathParam("id").toInt(),
