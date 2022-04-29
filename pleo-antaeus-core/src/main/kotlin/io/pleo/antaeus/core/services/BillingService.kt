@@ -29,7 +29,17 @@ class BillingService(
         var result = true
         var currentPage: InvoicePage? = null
         while(!hasProcessedEverything(currentPage)) {
-            currentPage = getNextPage(status, pageSize, getCurrentMarker(currentPage))
+            currentPage = getNextStatusPage(status, pageSize, getCurrentMarker(currentPage))
+            result = result && processInvoices(currentPage.invoices)
+        }
+        return result
+    }
+
+    fun proccessInvoicesByCustomer(customer: Int, pageSize: Int = DEFAULT_PAGE_SIZE): Boolean {
+        var result = true
+        var currentPage: InvoicePage? = null
+        while(!hasProcessedEverything(currentPage)) {
+            currentPage = getNextCustomerPage(customer, pageSize, getCurrentMarker(currentPage))
             result = result && processInvoices(currentPage.invoices)
         }
         return result
@@ -43,7 +53,10 @@ class BillingService(
         listOf(invoiceService.fetch(id))
             .filter { it.status != InvoiceStatus.PAID }
 
-    private fun getNextPage(status: String, pageSize: Int, marker: Int?): InvoicePage = invoiceService.fetchPageByStatus(status = status, marker = marker, pageSize = pageSize)
+    private fun getNextStatusPage(status: String, pageSize: Int, marker: Int?): InvoicePage =
+        invoiceService.fetchPageByStatus(status = status, marker = marker, pageSize = pageSize)
+    private fun getNextCustomerPage(customer: Int, pageSize: Int, marker: Int?): InvoicePage =
+        invoiceService.fetchPageByCustomer(customer = customer, marker = marker, pageSize = pageSize)
     private fun hasProcessedEverything(currentPage: InvoicePage?): Boolean = currentPage?.isLast ?: false
     private fun getCurrentMarker(invoicePage: InvoicePage?) = invoicePage?.marker
 
@@ -71,7 +84,7 @@ class BillingService(
 
     private fun processInvoice(invoice: Invoice): Boolean {
         var result = true
-        logger.debug{"Processing invoice ${invoice.id}"}
+        logger.info{"Processing invoice ${invoice.id}"}
         try {
             result = paymentProvider.charge(invoice)
             when (result) {
@@ -79,7 +92,7 @@ class BillingService(
                 else -> updateInvoiceStatus(invoice.id, InvoiceStatus.PENDING.toString())
             }
         } catch(e: NetworkException) {
-            logger.debug{"Network error proccessing ${invoice.id}"}
+            logger.error{"Network error proccessing ${invoice.id}"}
             throw e
         } catch (e: Exception) {
             val newStatus = when (e) {
@@ -90,7 +103,7 @@ class BillingService(
             updateInvoiceStatus(invoice.id, newStatus)
             result = false
         }
-        logger.debug{"Processed invoice ${invoice.id} with result ${result}"}
+        logger.info{"Processed invoice ${invoice.id} with result ${result}"}
         return result
     }
 

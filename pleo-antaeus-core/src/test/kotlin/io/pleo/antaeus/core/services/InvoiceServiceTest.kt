@@ -6,10 +6,7 @@ import io.mockk.verify
 import io.pleo.antaeus.core.exceptions.InvoiceNotFoundException
 import io.pleo.antaeus.core.exceptions.StatusNotFoundException
 import io.pleo.antaeus.data.AntaeusDal
-import io.pleo.antaeus.models.Currency
-import io.pleo.antaeus.models.Invoice
-import io.pleo.antaeus.models.InvoiceStatus
-import io.pleo.antaeus.models.Money
+import io.pleo.antaeus.models.*
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -19,8 +16,16 @@ import java.math.BigDecimal
 class InvoiceServiceTest {
     private val dal = mockk<AntaeusDal> {
         every { fetchInvoice(404) } returns null
-        every { fetchInvoicesByStatus(InvoiceStatus.PAID) } returns listOf(Invoice(1, 1, Money(BigDecimal.valueOf(1L), Currency.DKK), InvoiceStatus.PAID))
+        every { fetchInvoicesByStatus(InvoiceStatus.PAID) } returns
+                listOf(Invoice(1, 1, Money(BigDecimal.valueOf(1L), Currency.DKK), InvoiceStatus.PAID))
     }
+
+    private fun anInvoicePage(status: InvoiceStatus, isLast: Boolean, pageSize: Int): InvoicePage =
+        InvoicePage(
+            invoices = List(pageSize) { Invoice(it, it, Money(BigDecimal.valueOf(1L), Currency.DKK), InvoiceStatus.PENDING) },
+            isLast = isLast,
+            marker = pageSize
+        )
 
     private val invoiceService = InvoiceService(dal = dal)
 
@@ -44,6 +49,44 @@ class InvoiceServiceTest {
         Assertions.assertAll(
             Executable { Assertions.assertEquals(1, invoices.size) },
             Executable { Assertions.assertEquals(1, invoices.get(0).id) }
+        )
+    }
+
+    @Test
+    fun `will return 2 pages of PENDING invoices`() {
+
+        every { dal.fetchInvoicePagesByStatus(InvoiceStatus.PENDING, 50, null) } returns
+                anInvoicePage(InvoiceStatus.PENDING, false, 50)
+
+        every { dal.fetchInvoicePagesByStatus(InvoiceStatus.PENDING, 50, 49) } returns
+                anInvoicePage(InvoiceStatus.PENDING, true, 50)
+
+        val page1 = invoiceService.fetchPageByStatus(status = InvoiceStatus.PENDING.toString(), pageSize = 50, marker = null)
+        val page2 = invoiceService.fetchPageByStatus(status = InvoiceStatus.PENDING.toString(), pageSize = 50, marker = page1.invoices.last().id)
+        Assertions.assertAll(
+            Executable { Assertions.assertEquals(50, page1.invoices.size) },
+            Executable { Assertions.assertFalse(page1.isLast) },
+            Executable { Assertions.assertEquals(50, page2.invoices.size) },
+            Executable { Assertions.assertTrue(page2.isLast) }
+        )
+    }
+
+    @Test
+    fun `will return 2 pages of PENDING invoices when look for specific customer`() {
+
+        every { dal.fetchInvoicePagesByCustomer(1, 50, null) } returns
+                anInvoicePage(InvoiceStatus.PENDING, false, 50)
+
+        every { dal.fetchInvoicePagesByCustomer(1, 50, 49) } returns
+                anInvoicePage(InvoiceStatus.PENDING, true, 50)
+
+        val page1 = invoiceService.fetchPageByCustomer(customer = 1, pageSize = 50, marker = null)
+        val page2 = invoiceService.fetchPageByCustomer(customer = 1, pageSize = 50, marker = page1.invoices.last().id)
+        Assertions.assertAll(
+            Executable { Assertions.assertEquals(50, page1.invoices.size) },
+            Executable { Assertions.assertFalse(page1.isLast) },
+            Executable { Assertions.assertEquals(50, page2.invoices.size) },
+            Executable { Assertions.assertTrue(page2.isLast) }
         )
     }
 

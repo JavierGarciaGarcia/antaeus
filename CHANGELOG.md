@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 1.3.0
+* add new endpoint to pay for a specific customer
+* regroup endpoints
+
 ## 1.2.1
 * fix issue to make the invoice process into a new thread
 

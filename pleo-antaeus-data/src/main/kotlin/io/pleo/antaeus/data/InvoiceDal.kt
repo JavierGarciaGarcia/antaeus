@@ -35,8 +35,18 @@ class InvoiceDal ( private val db: Database ){
     }
 
     fun fetchInvoicesPageByStatus(status: InvoiceStatus, pageSize: Int = DEFAULT_PAGE_SIZE, marker: Int?): InvoicePage {
-        val condition = InvoiceTable
+        val baseQuery = InvoiceTable
             .select(InvoiceTable.status.eq(status.toString()))
+        return fetchInvoicePage(baseQuery, pageSize, marker)
+    }
+
+    fun fetchInvoicesPageByCustomer(customerId: Int, pageSize: Int = DEFAULT_PAGE_SIZE, marker: Int?): InvoicePage {
+        val baseQuery = InvoiceTable.select(InvoiceTable.customerId.eq(customerId))
+        return fetchInvoicePage(baseQuery, pageSize, marker)
+    }
+
+    private fun fetchInvoicePage(baseQuery: Query, pageSize: Int = DEFAULT_PAGE_SIZE, marker: Int?): InvoicePage {
+        val condition = baseQuery
         marker?.let {
             condition.andWhere { InvoiceTable.id.greater(it) }
         }

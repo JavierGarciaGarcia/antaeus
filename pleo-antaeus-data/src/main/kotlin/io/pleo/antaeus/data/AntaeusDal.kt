@@ -23,6 +23,9 @@ class AntaeusDal(db: Database) {
     fun updateInvoiceStatus(id: Int, newStatus: InvoiceStatus): Invoice? = invoiceDal.updateInvoiceStatus(id, newStatus)
     fun fetchInvoicePagesByStatus(status: InvoiceStatus, pageSize: Int?, marker: Int?): InvoicePage =
         invoiceDal.fetchInvoicesPageByStatus(status, pageSize.let { DEFAULT_PAGE_SIZE }, marker)
+    fun fetchInvoicePagesByCustomer(customer: Int, pageSize: Int?, marker: Int?): InvoicePage =
+        invoiceDal.fetchInvoicesPageByCustomer(customer, pageSize.let { DEFAULT_PAGE_SIZE }, marker)
+
 
     fun fetchCustomer(id: Int): Customer? = customerDal.fetchCustomer(id)
     fun fetchCustomers(): List<Customer> = customerDal.fetchCustomers()

@@ -85,27 +85,42 @@ class AntaeusRest(
                         get("/status/:status") {
                             it.json(invoiceService.fetchByStatus(it.pathParam("status")))
                         }
+                    }
 
-                        //URL: /rest/v1/invoices/pay/{:id}
-                        post("/pay/:id") {
+                    path("payments") {
+                        //URL: /rest/v1/payments/invoices/{:id}
+                        post("/invoices/:id") {
                             val result = billingService.processInvoice(it.pathParam("id").toInt())
                             if (result) {
                                 it.status(200)
-                                it.json("The invoice has being paid correctly")
+                                it.json("The invoice has been paid correctly")
                             } else {
                                 it.status(202)
                                 it.json("The invoice cannot be paid. Please consult the payment provider")
                             }
                         }
 
-                        post("/pay/start/:status") {
+                        //URL: /rest/v1/payments/invoices/status/{:status}
+                        post("/invoices/status/:status") {
                             val result = billingService.processInvoicesByStatus(it.pathParam("status"))
                             if (result) {
                                 it.status(200)
-                                it.json("The invoices have being paid correctly")
+                                it.json("The invoices have been paid correctly")
                             } else {
                                 it.status(202)
                                 it.json("Some of the invoices cannot be paid. Please consult the payment provider")
+                            }
+                        }
+
+                        //URL: /rest/v1/payments/customers/{:id}
+                        post("/customers/:id") {
+                            val result = billingService.proccessInvoicesByCustomer(it.pathParam("id").toInt())
+                            if (result) {
+                                it.status(200)
+                                it.json("The customer's invoices have been paid correctly")
+                            } else {
+                                it.status(202)
+                                it.json("The customer's invoices cannot be paid. Please consult the payment provider")
                             }
                         }
                     }

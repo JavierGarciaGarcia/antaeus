@@ -47,6 +47,21 @@ class BillingServiceTest {
     }
 
     @Test
+    fun `should get the customer invoice list using pagination and call paymentProvider`() {
+        val invoices = expectCustomerInvoicePageof1ElementToBePaid(1)
+        billingService.proccessInvoicesByCustomer(1, pageSize = 1)
+        for (invoice in invoices) {
+            verify {
+                paymentProvider.charge(invoice)
+                invoiceService.updateStatus(invoice.id, InvoiceStatus.PAID.toString())
+            }
+            verify(exactly = 2) {
+                invoiceService.fetchPageByCustomer(customer = 1, pageSize = 1, marker = any())
+            }
+        }
+    }
+
+    @Test
     fun `should do not call paymentProvider with an already paid invoice`() {
         val invoice = expectAlreadyPaidInvoice(1)
         billingService.processInvoice(invoice.id)
@@ -171,6 +186,36 @@ class BillingServiceTest {
         )
         every {
             invoiceService.fetchPageByStatus(status, pageSize = 1, marker = invoicesList.first().id)
+        } returns InvoicePage(
+            invoices = listOf(invoicesList.last()),
+            isLast = true,
+            marker = invoicesList.last().id
+        )
+        every {
+            paymentProvider.charge(any())
+        } returns true
+        for(invoice in invoicesList) {
+            every {
+                paymentProvider.charge(invoice)
+            } returns true
+            every {
+                invoiceService.updateStatus(invoice.id, InvoiceStatus.PAID.toString())
+            } returns invoice
+        }
+        return invoicesList
+    }
+
+    private fun expectCustomerInvoicePageof1ElementToBePaid(customer: Int): List<Invoice> {
+        val invoicesList = aListOfInvoices(size = 2, status = InvoiceStatus.PENDING.toString())
+        every {
+            invoiceService.fetchPageByCustomer(customer, pageSize = 1, marker = null)
+        } returns InvoicePage(
+            invoices = listOf(invoicesList.first()),
+            isLast = false,
+            marker = invoicesList.first().id
+        )
+        every {
+            invoiceService.fetchPageByCustomer(customer, pageSize = 1, marker = invoicesList.first().id)
         } returns InvoicePage(
             invoices = listOf(invoicesList.last()),
             isLast = true,

@@ -31,6 +31,9 @@ class InvoiceService(private val dal: AntaeusDal) {
         return dal.fetchInvoicePagesByStatus(validStatus, pageSize, marker)
     }
 
+    fun fetchPageByCustomer(customer: Int, pageSize: Int = DEFAULT_PAGE_SIZE, marker: Int?): InvoicePage =
+        dal.fetchInvoicePagesByCustomer(customer, pageSize, marker)
+
     fun updateStatus(id: Int, newStatus: String): Invoice? {
         return dal.updateInvoiceStatus(id, translateStatus(newStatus))
     }
