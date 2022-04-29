@@ -12,7 +12,11 @@ import io.pleo.antaeus.models.InvoicePage
 import io.pleo.antaeus.models.InvoiceStatus
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.retryWhen
 import kotlinx.coroutines.runBlocking
 import mu.KotlinLogging
 
@@ -28,19 +32,17 @@ class BillingService(
     fun processInvoicesByStatus(status: String, pageSize: Int = DEFAULT_PAGE_SIZE): Boolean {
         var result = true
         var currentPage: InvoicePage? = null
-        while(!hasProcessedEverything(currentPage)) {
+        while (!hasProcessedEverything(currentPage)) {
             currentPage = getNextStatusPage(status, pageSize, getCurrentMarker(currentPage))
             result = result && processInvoices(currentPage.invoices)
         }
         return result
     }
 
-    fun proccessInvoicesByCustomer(customer: Int,
-                                   status: String = InvoiceStatus.PENDING.toString(),
-                                   pageSize: Int = DEFAULT_PAGE_SIZE): Boolean {
+    fun proccessInvoicesByCustomer(customer: Int, status: String = InvoiceStatus.PENDING.toString(), pageSize: Int = DEFAULT_PAGE_SIZE): Boolean {
         var result = true
         var currentPage: InvoicePage? = null
-        while(!hasProcessedEverything(currentPage)) {
+        while (!hasProcessedEverything(currentPage)) {
             currentPage = getNextCustomerPage(customer, status, pageSize, getCurrentMarker(currentPage))
             result = result && processInvoices(currentPage.invoices)
         }
@@ -51,7 +53,7 @@ class BillingService(
         return processInvoices(getInvoices(id))
     }
 
-    private fun getInvoices(id:Int): List<Invoice> =
+    private fun getInvoices(id: Int): List<Invoice> =
         listOf(invoiceService.fetch(id))
             .filter { it.status != InvoiceStatus.PAID }
 
@@ -66,11 +68,11 @@ class BillingService(
         return@runBlocking processInvoicesFlow(invoices)
     }
 
-    suspend private fun processInvoicesFlow(invoices: List<Invoice>): Boolean {
+    private suspend fun processInvoicesFlow(invoices: List<Invoice>): Boolean {
         var result = true
         invoices.asFlow()
             .map { processInvoice(it) }
-            .retryWhen { cause, attempt ->
+            .retryWhen() { cause, attempt ->
                 delay(getDelay(attempt))
                 attempt < 3 && cause is NetworkException
             }
@@ -85,16 +87,16 @@ class BillingService(
     }
 
     private fun processInvoice(invoice: Invoice): Boolean {
-        var result = true
-        logger.info{"Processing invoice ${invoice.id}"}
+        var result: Boolean
+        logger.info { "Processing invoice ${invoice.id}" }
         try {
             result = paymentProvider.charge(invoice)
             when (result) {
                 true -> updateInvoiceStatus(invoice.id, InvoiceStatus.PAID.toString())
                 else -> updateInvoiceStatus(invoice.id, InvoiceStatus.PENDING.toString())
             }
-        } catch(e: NetworkException) {
-            logger.error{"Network error proccessing ${invoice.id}"}
+        } catch (e: NetworkException) {
+            logger.error { "Network error proccessing ${invoice.id}" }
             throw e
         } catch (e: Exception) {
             val newStatus = when (e) {
@@ -105,7 +107,7 @@ class BillingService(
             updateInvoiceStatus(invoice.id, newStatus)
             result = false
         }
-        logger.info{"Processed invoice ${invoice.id} with result ${result}"}
+        logger.info { "Processed invoice ${invoice.id} with result $result" }
         return result
     }
 

@@ -5,13 +5,15 @@
 package io.pleo.antaeus.rest
 
 import io.javalin.Javalin
-import io.javalin.apibuilder.ApiBuilder.*
+import io.javalin.apibuilder.ApiBuilder.get
+import io.javalin.apibuilder.ApiBuilder.path
+import io.javalin.apibuilder.ApiBuilder.post
 import io.pleo.antaeus.core.exceptions.EntityNotFoundException
+import io.pleo.antaeus.core.exceptions.InvoiceNotFoundException
 import io.pleo.antaeus.core.exceptions.StatusNotFoundException
 import io.pleo.antaeus.core.services.BillingService
 import io.pleo.antaeus.core.services.CustomerService
 import io.pleo.antaeus.core.services.InvoiceService
-import io.pleo.antaeus.models.InvoiceStatus
 import mu.KotlinLogging
 
 private val logger = KotlinLogging.logger {}
@@ -44,6 +46,10 @@ class AntaeusRest(
                 ctx.status(400)
                 ctx.json("Invalid status")
             }
+            exception(InvoiceNotFoundException::class.java) { _, ctx ->
+                ctx.status(404)
+                ctx.json("Invoice not found")
+            }
             // On 404: return message
             error(404) { ctx -> ctx.json("not found") }
         }
@@ -71,24 +77,17 @@ class AntaeusRest(
 
                         // URL: /rest/v1/invoices/{:id}
                         get(":id") {
-                            val invoice = invoiceService.fetch(it.pathParam("id").toInt())
-                            if (invoice != null) {
-                                it.json(invoiceService.fetch(it.pathParam("id").toInt()))
-                            } else {
-                                it.status(404)
-                                it.json("Invoice not found")
-                            }
-
+                            it.json(invoiceService.fetch(it.pathParam("id").toInt()))
                         }
 
-                        //URL: /rest/v1/invoices/status/{:status}
+                        // URL: /rest/v1/invoices/status/{:status}
                         get("/status/:status") {
                             it.json(invoiceService.fetchByStatus(it.pathParam("status")))
                         }
                     }
 
                     path("payments") {
-                        //URL: /rest/v1/payments/invoices/{:id}
+                        // URL: /rest/v1/payments/invoices/{:id}
                         post("/invoices/:id") {
                             val result = billingService.processInvoice(it.pathParam("id").toInt())
                             if (result) {
@@ -100,7 +99,7 @@ class AntaeusRest(
                             }
                         }
 
-                        //URL: /rest/v1/payments/invoices/status/{:status}
+                        // URL: /rest/v1/payments/invoices/status/{:status}
                         post("/invoices/status/:status") {
                             val result = billingService.processInvoicesByStatus(it.pathParam("status"))
                             if (result) {
@@ -112,7 +111,7 @@ class AntaeusRest(
                             }
                         }
 
-                        //URL: /rest/v1/payments/customers/{:id}
+                        // URL: /rest/v1/payments/customers/{:id}
                         post("/customers/:id") {
                             val result = billingService.proccessInvoicesByCustomer(it.pathParam("id").toInt())
                             if (result) {
@@ -124,7 +123,7 @@ class AntaeusRest(
                             }
                         }
 
-                        //URL: /rest/v1/payments/customers/{:id}/status/{:status}
+                        // URL: /rest/v1/payments/customers/{:id}/status/{:status}
                         post("/customers/:id/status/:status") {
                             val result = billingService.proccessInvoicesByCustomer(
                                 customer = it.pathParam("id").toInt(),

@@ -8,7 +8,11 @@ import io.pleo.antaeus.core.exceptions.CustomerNotFoundException
 import io.pleo.antaeus.core.exceptions.NetworkException
 import io.pleo.antaeus.core.external.PaymentProvider
 import io.pleo.antaeus.data.constants.DEFAULT_PAGE_SIZE
-import io.pleo.antaeus.models.*
+import io.pleo.antaeus.models.Currency
+import io.pleo.antaeus.models.Invoice
+import io.pleo.antaeus.models.InvoicePage
+import io.pleo.antaeus.models.InvoiceStatus
+import io.pleo.antaeus.models.Money
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import java.math.BigDecimal
@@ -65,7 +69,7 @@ class BillingServiceTest {
     fun `should do not call paymentProvider with an already paid invoice`() {
         val invoice = expectAlreadyPaidInvoice(1)
         billingService.processInvoice(invoice.id)
-        verify(exactly = 0){
+        verify(exactly = 0) {
             paymentProvider.charge(invoice)
         }
     }
@@ -155,7 +159,6 @@ class BillingServiceTest {
         }
     }
 
-
     private fun expectListOfInvoicesSuitableForBeingPaid(status: String): InvoicePage {
         val expectedInvoices = aPageOfInvoices(aListOfInvoices(status = status), true)
         every {
@@ -164,7 +167,7 @@ class BillingServiceTest {
         every {
             paymentProvider.charge(any())
         } returns true
-        for(invoice in expectedInvoices.invoices) {
+        for (invoice in expectedInvoices.invoices) {
             every {
                 paymentProvider.charge(invoice)
             } returns true
@@ -194,7 +197,7 @@ class BillingServiceTest {
         every {
             paymentProvider.charge(any())
         } returns true
-        for(invoice in invoicesList) {
+        for (invoice in invoicesList) {
             every {
                 paymentProvider.charge(invoice)
             } returns true
@@ -224,7 +227,7 @@ class BillingServiceTest {
         every {
             paymentProvider.charge(any())
         } returns true
-        for(invoice in invoicesList) {
+        for (invoice in invoicesList) {
             every {
                 paymentProvider.charge(invoice)
             } returns true
@@ -306,8 +309,7 @@ class BillingServiceTest {
         InvoicePage(invoices, isLast, invoices.last().id)
 
     private fun aListOfInvoices(size: Int = 2, status: String = InvoiceStatus.PENDING.toString()): List<Invoice> =
-            List(size) { anInvoice(it, InvoiceStatus.valueOf(status)) }
+        List(size) { anInvoice(it, InvoiceStatus.valueOf(status)) }
 
     private fun anInvoice(id: Int, status: InvoiceStatus) = Invoice(id, id, Money(BigDecimal.valueOf(1L), Currency.DKK), status)
-
 }

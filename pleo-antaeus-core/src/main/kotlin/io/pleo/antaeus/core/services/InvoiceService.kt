@@ -7,10 +7,10 @@ package io.pleo.antaeus.core.services
 import io.pleo.antaeus.core.exceptions.InvoiceNotFoundException
 import io.pleo.antaeus.core.exceptions.StatusNotFoundException
 import io.pleo.antaeus.data.AntaeusDal
+import io.pleo.antaeus.data.constants.DEFAULT_PAGE_SIZE
 import io.pleo.antaeus.models.Invoice
 import io.pleo.antaeus.models.InvoicePage
 import io.pleo.antaeus.models.InvoiceStatus
-import io.pleo.antaeus.data.constants.DEFAULT_PAGE_SIZE
 
 class InvoiceService(private val dal: AntaeusDal) {
     fun fetchAll(): List<Invoice> {
@@ -22,30 +22,31 @@ class InvoiceService(private val dal: AntaeusDal) {
     }
 
     fun fetchByStatus(status: String): List<Invoice> {
-        val validStatus : InvoiceStatus = translateStatus(status)
+        val validStatus: InvoiceStatus = translateStatus(status)
         return dal.fetchInvoicesByStatus(validStatus)
     }
 
     fun fetchPageByStatus(status: String, pageSize: Int = DEFAULT_PAGE_SIZE, marker: Int?): InvoicePage {
-        val validStatus : InvoiceStatus = translateStatus(status)
+        val validStatus: InvoiceStatus = translateStatus(status)
         return dal.fetchInvoicePagesByStatus(validStatus, pageSize, marker)
     }
 
-    fun fetchPageByCustomer(customer: Int,
-                            status: String = InvoiceStatus.PENDING.toString(),
-                            pageSize: Int = DEFAULT_PAGE_SIZE,
-                            marker: Int?): InvoicePage {
-        val validStatus : InvoiceStatus = translateStatus(status)
+    fun fetchPageByCustomer(
+        customer: Int,
+        status: String = InvoiceStatus.PENDING.toString(),
+        pageSize: Int = DEFAULT_PAGE_SIZE,
+        marker: Int?
+    ): InvoicePage {
+        val validStatus: InvoiceStatus = translateStatus(status)
         return dal.fetchInvoicePagesByCustomer(customer, validStatus, pageSize, marker)
     }
-
 
     fun updateStatus(id: Int, newStatus: String): Invoice? {
         return dal.updateInvoiceStatus(id, translateStatus(newStatus))
     }
 
-    private fun translateStatus(status : String): InvoiceStatus {
-        val validStatus : InvoiceStatus?
+    private fun translateStatus(status: String): InvoiceStatus {
+        val validStatus: InvoiceStatus?
         try {
             validStatus = InvoiceStatus.valueOf(status)
         } catch (e: Exception) {

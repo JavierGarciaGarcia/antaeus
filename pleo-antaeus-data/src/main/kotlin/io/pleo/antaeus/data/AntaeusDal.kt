@@ -4,12 +4,16 @@
 
     See the `mappings` module for the conversions between database rows and Kotlin objects.
  */
-
 package io.pleo.antaeus.data
 
-import io.pleo.antaeus.models.*
-import org.jetbrains.exposed.sql.*
 import io.pleo.antaeus.data.constants.DEFAULT_PAGE_SIZE
+import io.pleo.antaeus.models.Currency
+import io.pleo.antaeus.models.Customer
+import io.pleo.antaeus.models.Invoice
+import io.pleo.antaeus.models.InvoicePage
+import io.pleo.antaeus.models.InvoiceStatus
+import io.pleo.antaeus.models.Money
+import org.jetbrains.exposed.sql.Database
 
 class AntaeusDal(db: Database) {
     private val invoiceDal = InvoiceDal(db)
@@ -25,7 +29,6 @@ class AntaeusDal(db: Database) {
         invoiceDal.fetchInvoicesPageByStatus(status, pageSize.let { DEFAULT_PAGE_SIZE }, marker)
     fun fetchInvoicePagesByCustomer(customer: Int, status: InvoiceStatus, pageSize: Int?, marker: Int?): InvoicePage =
         invoiceDal.fetchInvoicesPageByCustomer(customer, status, pageSize.let { DEFAULT_PAGE_SIZE }, marker)
-
 
     fun fetchCustomer(id: Int): Customer? = customerDal.fetchCustomer(id)
     fun fetchCustomers(): List<Customer> = customerDal.fetchCustomers()

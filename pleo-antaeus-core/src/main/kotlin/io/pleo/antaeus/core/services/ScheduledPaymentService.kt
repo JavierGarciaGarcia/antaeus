@@ -11,7 +11,7 @@ class ScheduledPaymentService(
     private val biilingService: BillingService
 ) {
 
-    val scope = CoroutineScope(Dispatchers.Default )
+    private val scope = CoroutineScope(Dispatchers.Default)
     private val logger = KotlinLogging.logger {}
 
     fun schedule() = scope.launch {
@@ -21,5 +21,4 @@ class ScheduledPaymentService(
             logger.info("Task executed with result $result")
         }
     }
-
 }
