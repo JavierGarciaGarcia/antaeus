@@ -74,7 +74,7 @@ class BillingService(
         invoices.asFlow()
             .map { processInvoice(it) }
             .retryWhen() { cause, attempt ->
-                delay(getMilisecsDelay(attempt))
+                delay(getMilisDelay(attempt))
                 attempt < NUMBER_OF_ATTEMPTS && cause is NetworkException
             }
             .circuitBreaker(CircuitBreaker.ofDefaults("invoicePayment"))
@@ -99,7 +99,6 @@ class BillingService(
             throw e
         } catch (e: Exception) {
             newStatus = exception2InvoiceStatus(e)
-            updateInvoiceStatus(invoice.id, newStatus)
             result = false
         }
         updateInvoiceStatus(invoice.id, newStatus)
@@ -107,7 +106,7 @@ class BillingService(
         return result
     }
 
-    private fun getMilisecsDelay(attempt: Long) = (MIN_DELAY * attempt).coerceAtMost(MAX_DELAY)
+    private fun getMilisDelay(attempt: Long) = (MIN_DELAY * attempt).coerceAtMost(MAX_DELAY)
 
     private fun updateInvoiceStatus(id: Int, status: InvoiceStatus = InvoiceStatus.PAID) = invoiceService.updateStatus(id, status)
 
