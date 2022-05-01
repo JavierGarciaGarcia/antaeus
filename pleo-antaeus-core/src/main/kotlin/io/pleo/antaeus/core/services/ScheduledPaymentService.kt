@@ -8,16 +8,17 @@ import kotlinx.coroutines.launch
 import mu.KotlinLogging
 
 class ScheduledPaymentService(
-    private val biilingService: BillingService
+    private val billingService: BillingService
 ) {
 
     private val scope = CoroutineScope(Dispatchers.Default)
     private val logger = KotlinLogging.logger {}
 
     fun schedule() = scope.launch {
-        doInfinity("0 0 0 1 *") {
+        val oncePerMonth = "0 0 0 1 *"
+        doInfinity(oncePerMonth) {
             logger.info("Executing scheduled task")
-            val result = biilingService.processInvoicesByStatus(InvoiceStatus.PENDING.toString())
+            val result = billingService.processInvoicesByStatus(InvoiceStatus.PENDING)
             logger.info("Task executed with result $result")
         }
     }

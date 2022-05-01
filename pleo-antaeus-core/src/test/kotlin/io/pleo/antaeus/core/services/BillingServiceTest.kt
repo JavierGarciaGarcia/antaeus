@@ -24,40 +24,40 @@ class BillingServiceTest {
 
     @Test
     fun `should call paymentProvider with list of pending invoices and update all of them to PAID`() {
-        val invoicesPage = expectListOfInvoicesSuitableForBeingPaid("PENDING")
-        billingService.processInvoicesByStatus("PENDING")
+        val invoicesPage = expectListOfPendingInvoicesSuitableForBeingPaid(InvoiceStatus.PENDING)
+        billingService.processInvoicesByStatus(InvoiceStatus.PENDING)
         for (invoice in invoicesPage.invoices) {
             verify {
                 paymentProvider.charge(invoice)
-                invoiceService.updateStatus(invoice.id, InvoiceStatus.PAID.toString())
-                invoiceService.fetchPageByStatus(status = "PENDING", pageSize = any(), marker = any())
+                invoiceService.updateStatus(invoice.id, InvoiceStatus.PAID)
+                invoiceService.fetchPageByStatus(status = InvoiceStatus.PENDING, pageSize = any(), marker = any())
             }
         }
     }
 
     @Test
     fun `should get the invoice list using pagination and call paymentProvider`() {
-        val invoices = expectInvoicePageof1ElementToBePaid("PENDING")
-        billingService.processInvoicesByStatus("PENDING", pageSize = 1)
+        val invoices = expectInvoicePageOf1ElementToBePaid(InvoiceStatus.PENDING)
+        billingService.processInvoicesByStatus(InvoiceStatus.PENDING, pageSize = 1)
         for (invoice in invoices) {
             verify {
                 paymentProvider.charge(invoice)
-                invoiceService.updateStatus(invoice.id, InvoiceStatus.PAID.toString())
+                invoiceService.updateStatus(invoice.id, InvoiceStatus.PAID)
             }
             verify(exactly = 2) {
-                invoiceService.fetchPageByStatus(status = "PENDING", pageSize = 1, marker = any())
+                invoiceService.fetchPageByStatus(status = InvoiceStatus.PENDING, pageSize = 1, marker = any())
             }
         }
     }
 
     @Test
     fun `should get the customer invoice list using pagination and call paymentProvider`() {
-        val invoices = expectCustomerInvoicePageof1ElementToBePaid(1)
+        val invoices = expectCustomerInvoicePageOf1ElementToBePaid(1)
         billingService.proccessInvoicesByCustomer(1, pageSize = 1)
         for (invoice in invoices) {
             verify {
                 paymentProvider.charge(invoice)
-                invoiceService.updateStatus(invoice.id, InvoiceStatus.PAID.toString())
+                invoiceService.updateStatus(invoice.id, InvoiceStatus.PAID)
             }
             verify(exactly = 2) {
                 invoiceService.fetchPageByCustomer(customer = 1, pageSize = 1, marker = any())
@@ -66,7 +66,7 @@ class BillingServiceTest {
     }
 
     @Test
-    fun `should do not call paymentProvider with an already paid invoice`() {
+    fun `should not call paymentProvider with an already paid invoice`() {
         val invoice = expectAlreadyPaidInvoice(1)
         billingService.processInvoice(invoice.id)
         verify(exactly = 0) {
@@ -79,17 +79,17 @@ class BillingServiceTest {
         val invoice = anInvoice(1, InvoiceStatus.PENDING)
         expectMissingCustomerException(invoice)
 
-        val result = billingService.processInvoicesByStatus(InvoiceStatus.PENDING.toString())
+        val result = billingService.processInvoicesByStatus(InvoiceStatus.PENDING)
 
         Assertions.assertEquals(false, result)
         verify {
             paymentProvider.charge(invoice)
-            invoiceService.updateStatus(invoice.id, InvoiceStatus.MISSING_CUSTOMER.toString())
+            invoiceService.updateStatus(invoice.id, InvoiceStatus.MISSING_CUSTOMER)
         }
     }
 
     @Test
-    fun `should update invoice status to missing customer to a specific invoic when payment service throws missing customer exception`() {
+    fun `should update invoice status to missing customer to a specific invoice when payment service throws missing customer exception`() {
         val invoice = anInvoice(1, InvoiceStatus.PENDING)
         expectMissingCustomerException(invoice)
 
@@ -98,7 +98,7 @@ class BillingServiceTest {
         Assertions.assertEquals(false, result)
         verify {
             paymentProvider.charge(invoice)
-            invoiceService.updateStatus(invoice.id, InvoiceStatus.MISSING_CUSTOMER.toString())
+            invoiceService.updateStatus(invoice.id, InvoiceStatus.MISSING_CUSTOMER)
         }
     }
 
@@ -107,12 +107,12 @@ class BillingServiceTest {
         val invoice = anInvoice(1, InvoiceStatus.PENDING)
         expectCurrencyMismatchException(invoice)
 
-        val result = billingService.processInvoicesByStatus(InvoiceStatus.PENDING.toString())
+        val result = billingService.processInvoicesByStatus(InvoiceStatus.PENDING)
 
         Assertions.assertEquals(false, result)
         verify {
             paymentProvider.charge(invoice)
-            invoiceService.updateStatus(invoice.id, InvoiceStatus.CURRENCY_MISMATCH.toString())
+            invoiceService.updateStatus(invoice.id, InvoiceStatus.CURRENCY_MISMATCH)
         }
     }
 
@@ -126,7 +126,7 @@ class BillingServiceTest {
         Assertions.assertEquals(false, result)
         verify {
             paymentProvider.charge(invoice)
-            invoiceService.updateStatus(invoice.id, InvoiceStatus.CURRENCY_MISMATCH.toString())
+            invoiceService.updateStatus(invoice.id, InvoiceStatus.CURRENCY_MISMATCH)
         }
     }
 
@@ -139,7 +139,7 @@ class BillingServiceTest {
 
         Assertions.assertEquals(true, result)
         verify {
-            invoiceService.updateStatus(invoice.id, InvoiceStatus.PAID.toString())
+            invoiceService.updateStatus(invoice.id, InvoiceStatus.PAID)
         }
         verify(exactly = 2) {
             paymentProvider.charge(invoice)
@@ -159,7 +159,7 @@ class BillingServiceTest {
         }
     }
 
-    private fun expectListOfInvoicesSuitableForBeingPaid(status: String): InvoicePage {
+    private fun expectListOfPendingInvoicesSuitableForBeingPaid(status: InvoiceStatus): InvoicePage {
         val expectedInvoices = aPageOfInvoices(aListOfInvoices(status = status), true)
         every {
             invoiceService.fetchPageByStatus(status, pageSize = DEFAULT_PAGE_SIZE, marker = null)
@@ -172,13 +172,13 @@ class BillingServiceTest {
                 paymentProvider.charge(invoice)
             } returns true
             every {
-                invoiceService.updateStatus(invoice.id, InvoiceStatus.PAID.toString())
+                invoiceService.updateStatus(invoice.id, InvoiceStatus.PAID)
             } returns invoice
         }
         return expectedInvoices
     }
 
-    private fun expectInvoicePageof1ElementToBePaid(status: String): List<Invoice> {
+    private fun expectInvoicePageOf1ElementToBePaid(status: InvoiceStatus): List<Invoice> {
         val invoicesList = aListOfInvoices(size = 2, status = status)
         every {
             invoiceService.fetchPageByStatus(status, pageSize = 1, marker = null)
@@ -202,14 +202,14 @@ class BillingServiceTest {
                 paymentProvider.charge(invoice)
             } returns true
             every {
-                invoiceService.updateStatus(invoice.id, InvoiceStatus.PAID.toString())
+                invoiceService.updateStatus(invoice.id, InvoiceStatus.PAID)
             } returns invoice
         }
         return invoicesList
     }
 
-    private fun expectCustomerInvoicePageof1ElementToBePaid(customer: Int): List<Invoice> {
-        val invoicesList = aListOfInvoices(size = 2, status = InvoiceStatus.PENDING.toString())
+    private fun expectCustomerInvoicePageOf1ElementToBePaid(customer: Int): List<Invoice> {
+        val invoicesList = aListOfInvoices(size = 2, status = InvoiceStatus.PENDING)
         every {
             invoiceService.fetchPageByCustomer(customer, pageSize = 1, marker = null)
         } returns InvoicePage(
@@ -232,7 +232,7 @@ class BillingServiceTest {
                 paymentProvider.charge(invoice)
             } returns true
             every {
-                invoiceService.updateStatus(invoice.id, InvoiceStatus.PAID.toString())
+                invoiceService.updateStatus(invoice.id, InvoiceStatus.PAID)
             } returns invoice
         }
         return invoicesList
@@ -252,13 +252,13 @@ class BillingServiceTest {
         } throws CustomerNotFoundException(invoice.customerId)
 
         every {
-            invoiceService.fetchPageByStatus(InvoiceStatus.PENDING.toString(), pageSize = DEFAULT_PAGE_SIZE, marker = null)
+            invoiceService.fetchPageByStatus(InvoiceStatus.PENDING, pageSize = DEFAULT_PAGE_SIZE, marker = null)
         } returns InvoicePage(listOf(invoice), isLast = true, marker = invoice.id)
         every {
             invoiceService.fetch(invoice.id)
         } returns invoice
         every {
-            invoiceService.updateStatus(invoice.id, InvoiceStatus.MISSING_CUSTOMER.toString())
+            invoiceService.updateStatus(invoice.id, InvoiceStatus.MISSING_CUSTOMER)
         } returns invoice
     }
 
@@ -268,13 +268,13 @@ class BillingServiceTest {
         } throws CurrencyMismatchException(invoice.customerId, invoice.customerId)
 
         every {
-            invoiceService.fetchPageByStatus(InvoiceStatus.PENDING.toString(), pageSize = DEFAULT_PAGE_SIZE, marker = null)
+            invoiceService.fetchPageByStatus(InvoiceStatus.PENDING, pageSize = DEFAULT_PAGE_SIZE, marker = null)
         } returns InvoicePage(listOf(invoice), isLast = true, marker = invoice.id)
         every {
             invoiceService.fetch(invoice.id)
         } returns invoice
         every {
-            invoiceService.updateStatus(invoice.id, InvoiceStatus.CURRENCY_MISMATCH.toString())
+            invoiceService.updateStatus(invoice.id, InvoiceStatus.CURRENCY_MISMATCH)
         } returns invoice
     }
 
@@ -286,10 +286,10 @@ class BillingServiceTest {
             invoiceService.fetch(invoice.id)
         } returns invoice
         every {
-            invoiceService.updateStatus(invoice.id, InvoiceStatus.PENDING.toString())
+            invoiceService.updateStatus(invoice.id, InvoiceStatus.PENDING)
         } returns invoice
         every {
-            invoiceService.updateStatus(invoice.id, InvoiceStatus.PAID.toString())
+            invoiceService.updateStatus(invoice.id, InvoiceStatus.PAID)
         } returns invoice
     }
 
@@ -301,15 +301,15 @@ class BillingServiceTest {
             invoiceService.fetch(invoice.id)
         } returns invoice
         every {
-            invoiceService.updateStatus(invoice.id, InvoiceStatus.PENDING.toString())
+            invoiceService.updateStatus(invoice.id, InvoiceStatus.PENDING)
         } returns invoice
     }
 
     private fun aPageOfInvoices(invoices: List<Invoice>, isLast: Boolean = true): InvoicePage =
         InvoicePage(invoices, isLast, invoices.last().id)
 
-    private fun aListOfInvoices(size: Int = 2, status: String = InvoiceStatus.PENDING.toString()): List<Invoice> =
-        List(size) { anInvoice(it, InvoiceStatus.valueOf(status)) }
+    private fun aListOfInvoices(size: Int = 2, status: InvoiceStatus = InvoiceStatus.PENDING): List<Invoice> =
+        List(size) { anInvoice(it, status) }
 
     private fun anInvoice(id: Int, status: InvoiceStatus) = Invoice(id, id, Money(BigDecimal.valueOf(1L), Currency.DKK), status)
 }

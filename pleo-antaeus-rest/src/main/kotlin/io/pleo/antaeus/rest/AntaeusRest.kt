@@ -10,10 +10,11 @@ import io.javalin.apibuilder.ApiBuilder.path
 import io.javalin.apibuilder.ApiBuilder.post
 import io.pleo.antaeus.core.exceptions.EntityNotFoundException
 import io.pleo.antaeus.core.exceptions.InvoiceNotFoundException
-import io.pleo.antaeus.core.exceptions.StatusNotFoundException
 import io.pleo.antaeus.core.services.BillingService
 import io.pleo.antaeus.core.services.CustomerService
 import io.pleo.antaeus.core.services.InvoiceService
+import io.pleo.antaeus.models.InvoiceStatus
+import io.pleo.antaeus.rest.exceptions.StatusNotFoundException
 import mu.KotlinLogging
 
 private val logger = KotlinLogging.logger {}
@@ -27,6 +28,14 @@ class AntaeusRest(
 
     override fun run() {
         app.start(7000)
+    }
+
+    private fun translateStatus(status: String): InvoiceStatus {
+        try {
+            return InvoiceStatus.valueOf(status)
+        } catch (e: Exception) {
+            throw StatusNotFoundException(status)
+        }
     }
 
     // Set up Javalin rest app
@@ -82,7 +91,8 @@ class AntaeusRest(
 
                         // URL: /rest/v1/invoices/status/{:status}
                         get("/status/:status") {
-                            it.json(invoiceService.fetchByStatus(it.pathParam("status")))
+                            val invoiceStatus = translateStatus(it.pathParam("status"))
+                            it.json(invoiceService.fetchByStatus(invoiceStatus))
                         }
                     }
 
@@ -101,7 +111,8 @@ class AntaeusRest(
 
                         // URL: /rest/v1/payments/invoices/status/{:status}
                         post("/invoices/status/:status") {
-                            val result = billingService.processInvoicesByStatus(it.pathParam("status"))
+                            val invoiceStatus = translateStatus(it.pathParam("status"))
+                            val result = billingService.processInvoicesByStatus(invoiceStatus)
                             if (result) {
                                 it.status(200)
                                 it.json("The invoices have been paid correctly")
@@ -127,7 +138,7 @@ class AntaeusRest(
                         post("/customers/:id/status/:status") {
                             val result = billingService.proccessInvoicesByCustomer(
                                 customer = it.pathParam("id").toInt(),
-                                status = it.pathParam("status")
+                                status = translateStatus(it.pathParam("status"))
                             )
                             if (result) {
                                 it.status(200)

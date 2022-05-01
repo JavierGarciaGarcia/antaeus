@@ -22,13 +22,13 @@ class AntaeusDal(db: Database) {
     fun fetchInvoice(id: Int): Invoice? = invoiceDal.fetchInvoice(id)
     fun fetchInvoices(): List<Invoice> = invoiceDal.fetchInvoices()
     fun fetchInvoicesByStatus(status: InvoiceStatus): List<Invoice> = invoiceDal.fetchInvoicesByStatus(status)
-    fun createInvoice(amount: Money, customer: Customer, status: InvoiceStatus = InvoiceStatus.PENDING): Invoice? =
-        invoiceDal.createInvoice(amount, customer, status)
-    fun updateInvoiceStatus(id: Int, newStatus: InvoiceStatus): Invoice? = invoiceDal.updateInvoiceStatus(id, newStatus)
     fun fetchInvoicePagesByStatus(status: InvoiceStatus, pageSize: Int?, marker: Int?): InvoicePage =
         invoiceDal.fetchInvoicesPageByStatus(status, pageSize.let { DEFAULT_PAGE_SIZE }, marker)
     fun fetchInvoicePagesByCustomer(customer: Int, status: InvoiceStatus, pageSize: Int?, marker: Int?): InvoicePage =
         invoiceDal.fetchInvoicesPageByCustomer(customer, status, pageSize.let { DEFAULT_PAGE_SIZE }, marker)
+    fun createInvoice(amount: Money, customer: Customer, status: InvoiceStatus = InvoiceStatus.PENDING): Invoice? =
+        invoiceDal.createInvoice(amount, customer, status)
+    fun updateInvoiceStatus(id: Int, newStatus: InvoiceStatus): Invoice? = invoiceDal.updateInvoiceStatus(id, newStatus)
 
     fun fetchCustomer(id: Int): Customer? = customerDal.fetchCustomer(id)
     fun fetchCustomers(): List<Customer> = customerDal.fetchCustomers()

@@ -88,11 +88,18 @@ The code given is structured as follows. Feel free however to modify the structu
 Happy hacking 😁!
 
 ## Updates in the code
-I've spent the last 10-12 hours working in the challenge and include the following updates:
-* Implement the solution using asynchronous programming, using kotlin coroutines 
+
+I've spent the last 12 hours working in the challenge following the principles:
+* TDD
+* Clean Code
+* KISS (Keep It Simple) 
+
+The following updates have been maid:
+* Implement the solution using asynchronous [Why asynchronous programming](#asynchronous) 
 * Include circuit breaker to add a protection layer over the external provider
-* Usage of keyset pagination to avoid database issues when the dataset will grow
+* Usage of keyset [Keyset pagination](#keyset-pagination)
 * Use krontab library to handle the scheduled execution
+* Include a new architecture proposal [Antaeus v2.0](Architecture_2_0.md)
 
 ## Endpoints
 * /rest/v1/invoices : get all invoices
@@ -105,7 +112,7 @@ I've spent the last 10-12 hours working in the challenge and include the followi
 * /rest/v1/customers : get all the customers
 * /rest/v1/customers/{:id} : get a specific customer
 
-### Why asynchronous
+### Asynchronous
 The code has been designed and developed thinking in how the current solution can grow and can be used with real data. 
 Calling a third party component (payment provider) could be something that consume CPU or take time, so using asynchronous 
 programming will help the application to not keeping the main thread waiting and not waste CPU in that
@@ -114,7 +121,7 @@ Among with that, calling an external service is something that could include ext
 For that, I've decided to include a circuit breaker, so we will give some time to the external service to recover in case of unexpected 
 behavior
 
-### Keyset pagination and large datasets
+### Keyset pagination
 For iterating over large datasets in databases the common approach is using pagination, so the application will retrieve pages
 instead of the hole dataset
 When the dataset is huge and could be thousands of pages, databases suffer an issue known as "deep pagination issue", meaning that 

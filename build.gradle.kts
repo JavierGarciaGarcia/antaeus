@@ -8,7 +8,7 @@ plugins {
 
 allprojects {
     group = "io.pleo"
-    version = "1.3.1"
+    version = "1.4.0"
 
     apply(plugin = "org.jlleitschuh.gradle.ktlint")
 
@@ -24,5 +24,4 @@ allprojects {
     tasks.withType<Test> {
         useJUnitPlatform()
     }
-
 }

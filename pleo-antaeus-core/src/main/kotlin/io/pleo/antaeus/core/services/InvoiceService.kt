@@ -5,7 +5,6 @@
 package io.pleo.antaeus.core.services
 
 import io.pleo.antaeus.core.exceptions.InvoiceNotFoundException
-import io.pleo.antaeus.core.exceptions.StatusNotFoundException
 import io.pleo.antaeus.data.AntaeusDal
 import io.pleo.antaeus.data.constants.DEFAULT_PAGE_SIZE
 import io.pleo.antaeus.models.Invoice
@@ -21,37 +20,17 @@ class InvoiceService(private val dal: AntaeusDal) {
         return dal.fetchInvoice(id) ?: throw InvoiceNotFoundException(id)
     }
 
-    fun fetchByStatus(status: String): List<Invoice> {
-        val validStatus: InvoiceStatus = translateStatus(status)
-        return dal.fetchInvoicesByStatus(validStatus)
-    }
+    fun fetchByStatus(status: InvoiceStatus): List<Invoice> = dal.fetchInvoicesByStatus(status)
 
-    fun fetchPageByStatus(status: String, pageSize: Int = DEFAULT_PAGE_SIZE, marker: Int?): InvoicePage {
-        val validStatus: InvoiceStatus = translateStatus(status)
-        return dal.fetchInvoicePagesByStatus(validStatus, pageSize, marker)
-    }
+    fun fetchPageByStatus(status: InvoiceStatus, pageSize: Int = DEFAULT_PAGE_SIZE, marker: Int?): InvoicePage =
+        dal.fetchInvoicePagesByStatus(status, pageSize, marker)
 
     fun fetchPageByCustomer(
         customer: Int,
-        status: String = InvoiceStatus.PENDING.toString(),
+        status: InvoiceStatus = InvoiceStatus.PENDING,
         pageSize: Int = DEFAULT_PAGE_SIZE,
         marker: Int?
-    ): InvoicePage {
-        val validStatus: InvoiceStatus = translateStatus(status)
-        return dal.fetchInvoicePagesByCustomer(customer, validStatus, pageSize, marker)
-    }
+    ): InvoicePage = dal.fetchInvoicePagesByCustomer(customer, status, pageSize, marker)
 
-    fun updateStatus(id: Int, newStatus: String): Invoice? {
-        return dal.updateInvoiceStatus(id, translateStatus(newStatus))
-    }
-
-    private fun translateStatus(status: String): InvoiceStatus {
-        val validStatus: InvoiceStatus?
-        try {
-            validStatus = InvoiceStatus.valueOf(status)
-        } catch (e: Exception) {
-            throw StatusNotFoundException(status)
-        }
-        return validStatus
-    }
+    fun updateStatus(id: Int, newStatus: InvoiceStatus): Invoice? = dal.updateInvoiceStatus(id, newStatus)
 }

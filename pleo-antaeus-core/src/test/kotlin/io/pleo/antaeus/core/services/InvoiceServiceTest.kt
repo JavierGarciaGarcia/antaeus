@@ -4,7 +4,6 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import io.pleo.antaeus.core.exceptions.InvoiceNotFoundException
-import io.pleo.antaeus.core.exceptions.StatusNotFoundException
 import io.pleo.antaeus.data.AntaeusDal
 import io.pleo.antaeus.models.Currency
 import io.pleo.antaeus.models.Invoice
@@ -41,36 +40,8 @@ class InvoiceServiceTest {
     }
 
     @Test
-    fun `fetch will throw if status is not found`() {
-        assertThrows<StatusNotFoundException> {
-            invoiceService.fetchByStatus("INVALID STATUS")
-        }
-    }
-
-    @Test
-    fun `fetch will throw if status is not found fetching by customer`() {
-        assertThrows<StatusNotFoundException> {
-            invoiceService.fetchPageByCustomer(
-                customer = 1,
-                status = "INVALID STATUS",
-                marker = null
-            )
-        }
-    }
-
-    @Test
-    fun `fetch will throw if status is not found fetching page by status`() {
-        assertThrows<StatusNotFoundException> {
-            invoiceService.fetchPageByStatus(
-                status = "INVALID STATUS",
-                marker = null
-            )
-        }
-    }
-
-    @Test
     fun `will return invoice by status`() {
-        val invoices = invoiceService.fetchByStatus(InvoiceStatus.PAID.toString())
+        val invoices = invoiceService.fetchByStatus(InvoiceStatus.PAID)
         Assertions.assertAll(
             Executable { Assertions.assertEquals(1, invoices.size) },
             Executable { Assertions.assertEquals(1, invoices.get(0).id) }
@@ -86,8 +57,8 @@ class InvoiceServiceTest {
         every { dal.fetchInvoicePagesByStatus(InvoiceStatus.PENDING, 50, 49) } returns
             anInvoicePage(InvoiceStatus.PENDING, true, 50)
 
-        val page1 = invoiceService.fetchPageByStatus(status = InvoiceStatus.PENDING.toString(), pageSize = 50, marker = null)
-        val page2 = invoiceService.fetchPageByStatus(status = InvoiceStatus.PENDING.toString(), pageSize = 50, marker = page1.invoices.last().id)
+        val page1 = invoiceService.fetchPageByStatus(status = InvoiceStatus.PENDING, pageSize = 50, marker = null)
+        val page2 = invoiceService.fetchPageByStatus(status = InvoiceStatus.PENDING, pageSize = 50, marker = page1.invoices.last().id)
         Assertions.assertAll(
             Executable { Assertions.assertEquals(50, page1.invoices.size) },
             Executable { Assertions.assertFalse(page1.isLast) },
@@ -121,18 +92,11 @@ class InvoiceServiceTest {
         val newStatus = InvoiceStatus.PAID
         val updatedInvoice = expectUpdateInvoice(id, newStatus)
 
-        val result = invoiceService.updateStatus(id, newStatus.toString())
+        val result = invoiceService.updateStatus(id, newStatus)
 
         Assertions.assertEquals(updatedInvoice, result)
         verify {
             dal.updateInvoiceStatus(id, newStatus)
-        }
-    }
-
-    @Test
-    fun `update will throw if status is not found`() {
-        assertThrows<StatusNotFoundException> {
-            invoiceService.updateStatus(1, "INVALID STATUS")
         }
     }
 

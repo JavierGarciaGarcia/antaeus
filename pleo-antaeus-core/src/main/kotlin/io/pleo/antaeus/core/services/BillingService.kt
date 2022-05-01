@@ -2,6 +2,7 @@ package io.pleo.antaeus.core.services
 
 import io.github.resilience4j.circuitbreaker.CircuitBreaker
 import io.github.resilience4j.kotlin.circuitbreaker.circuitBreaker
+import io.pleo.antaeus.core.constants.NUMBER_OF_ATTEMPTS
 import io.pleo.antaeus.core.exceptions.CurrencyMismatchException
 import io.pleo.antaeus.core.exceptions.CustomerNotFoundException
 import io.pleo.antaeus.core.exceptions.NetworkException
@@ -29,7 +30,7 @@ class BillingService(
     private val MAX_DELAY = 1000L
     private val logger = KotlinLogging.logger {}
 
-    fun processInvoicesByStatus(status: String, pageSize: Int = DEFAULT_PAGE_SIZE): Boolean {
+    fun processInvoicesByStatus(status: InvoiceStatus, pageSize: Int = DEFAULT_PAGE_SIZE): Boolean {
         var result = true
         var currentPage: InvoicePage? = null
         while (!hasProcessedEverything(currentPage)) {
@@ -39,7 +40,7 @@ class BillingService(
         return result
     }
 
-    fun proccessInvoicesByCustomer(customer: Int, status: String = InvoiceStatus.PENDING.toString(), pageSize: Int = DEFAULT_PAGE_SIZE): Boolean {
+    fun proccessInvoicesByCustomer(customer: Int, status: InvoiceStatus = InvoiceStatus.PENDING, pageSize: Int = DEFAULT_PAGE_SIZE): Boolean {
         var result = true
         var currentPage: InvoicePage? = null
         while (!hasProcessedEverything(currentPage)) {
@@ -57,9 +58,9 @@ class BillingService(
         listOf(invoiceService.fetch(id))
             .filter { it.status != InvoiceStatus.PAID }
 
-    private fun getNextStatusPage(status: String, pageSize: Int, marker: Int?): InvoicePage =
+    private fun getNextStatusPage(status: InvoiceStatus, pageSize: Int, marker: Int?): InvoicePage =
         invoiceService.fetchPageByStatus(status = status, marker = marker, pageSize = pageSize)
-    private fun getNextCustomerPage(customer: Int, status: String, pageSize: Int, marker: Int?): InvoicePage =
+    private fun getNextCustomerPage(customer: Int, status: InvoiceStatus, pageSize: Int, marker: Int?): InvoicePage =
         invoiceService.fetchPageByCustomer(customer = customer, status = status, marker = marker, pageSize = pageSize)
     private fun hasProcessedEverything(currentPage: InvoicePage?): Boolean = currentPage?.isLast ?: false
     private fun getCurrentMarker(invoicePage: InvoicePage?) = invoicePage?.marker
@@ -73,8 +74,8 @@ class BillingService(
         invoices.asFlow()
             .map { processInvoice(it) }
             .retryWhen() { cause, attempt ->
-                delay(getDelay(attempt))
-                attempt < 3 && cause is NetworkException
+                delay(getMilisecsDelay(attempt))
+                attempt < NUMBER_OF_ATTEMPTS && cause is NetworkException
             }
             .circuitBreaker(CircuitBreaker.ofDefaults("invoicePayment"))
             .catch {
@@ -89,29 +90,35 @@ class BillingService(
     private fun processInvoice(invoice: Invoice): Boolean {
         var result: Boolean
         logger.info { "Processing invoice ${invoice.id}" }
+        var newStatus: InvoiceStatus
         try {
             result = paymentProvider.charge(invoice)
-            when (result) {
-                true -> updateInvoiceStatus(invoice.id, InvoiceStatus.PAID.toString())
-                else -> updateInvoiceStatus(invoice.id, InvoiceStatus.PENDING.toString())
-            }
+            newStatus = paymentResponse2InvoiceStatus(result)
         } catch (e: NetworkException) {
-            logger.error { "Network error proccessing ${invoice.id}" }
+            logger.error { "Network error processing ${invoice.id}" }
             throw e
         } catch (e: Exception) {
-            val newStatus = when (e) {
-                is CustomerNotFoundException -> InvoiceStatus.MISSING_CUSTOMER.toString()
-                is CurrencyMismatchException -> InvoiceStatus.CURRENCY_MISMATCH.toString()
-                else -> InvoiceStatus.PENDING.toString()
-            }
+            newStatus = exception2InvoiceStatus(e)
             updateInvoiceStatus(invoice.id, newStatus)
             result = false
         }
+        updateInvoiceStatus(invoice.id, newStatus)
         logger.info { "Processed invoice ${invoice.id} with result $result" }
         return result
     }
 
-    private fun getDelay(attempt: Long) = (MIN_DELAY * attempt).toLong().coerceAtMost(MAX_DELAY)
+    private fun getMilisecsDelay(attempt: Long) = (MIN_DELAY * attempt).coerceAtMost(MAX_DELAY)
 
-    private fun updateInvoiceStatus(id: Int, status: String = InvoiceStatus.PAID.toString()) = invoiceService.updateStatus(id, status)
+    private fun updateInvoiceStatus(id: Int, status: InvoiceStatus = InvoiceStatus.PAID) = invoiceService.updateStatus(id, status)
+
+    private fun paymentResponse2InvoiceStatus(paymentResponse: Boolean): InvoiceStatus = when (paymentResponse) {
+        true -> InvoiceStatus.PAID
+        false -> InvoiceStatus.PENDING
+    }
+
+    private fun exception2InvoiceStatus(exception: Exception): InvoiceStatus = when (exception) {
+        is CustomerNotFoundException -> InvoiceStatus.MISSING_CUSTOMER
+        is CurrencyMismatchException -> InvoiceStatus.CURRENCY_MISMATCH
+        else -> InvoiceStatus.PENDING
+    }
 }

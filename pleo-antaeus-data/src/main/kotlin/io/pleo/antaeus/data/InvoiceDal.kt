@@ -49,7 +49,7 @@ class InvoiceDal(private val db: Database) {
     fun fetchInvoicesPageByStatus(status: InvoiceStatus, pageSize: Int = DEFAULT_PAGE_SIZE, marker: Int?): InvoicePage {
         val baseQuery = InvoiceTable
             .select(InvoiceTable.status.eq(status.toString()))
-        return fetchInvoicePage(baseQuery, pageSize, marker)
+        return fetchInvoiceKeysetPage(baseQuery, pageSize, marker)
     }
 
     fun fetchInvoicesPageByCustomer(
@@ -59,10 +59,10 @@ class InvoiceDal(private val db: Database) {
         marker: Int?
     ): InvoicePage {
         val baseQuery = InvoiceTable.select(InvoiceTable.customerId.eq(customerId) and InvoiceTable.status.eq(status.toString()))
-        return fetchInvoicePage(baseQuery, pageSize, marker)
+        return fetchInvoiceKeysetPage(baseQuery, pageSize, marker)
     }
 
-    private fun fetchInvoicePage(baseQuery: Query, pageSize: Int = DEFAULT_PAGE_SIZE, marker: Int?): InvoicePage {
+    private fun fetchInvoiceKeysetPage(baseQuery: Query, pageSize: Int = DEFAULT_PAGE_SIZE, marker: Int?): InvoicePage {
         val condition = baseQuery
         marker?.let {
             condition.andWhere { InvoiceTable.id.greater(it) }
@@ -96,12 +96,12 @@ class InvoiceDal(private val db: Database) {
     }
 
     fun updateInvoiceStatus(id: Int, newStatus: InvoiceStatus): Invoice? {
-        val id = transaction(db) {
+        val updatedId = transaction(db) {
             InvoiceTable
                 .update({ InvoiceTable.id.eq(id) }) {
                     it[status] = newStatus.toString()
                 }
         }
-        return fetchInvoice(id)
+        return fetchInvoice(updatedId)
     }
 }
