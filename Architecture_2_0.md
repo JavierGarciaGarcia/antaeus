@@ -1,6 +1,6 @@
 # New Architecture Proposal 
 
-![Architecture version 2.0](anteus_arch_2_0.png)
+![Architecture version 2.0](anteus_architecture_2.0.png)
 
 ## Current architecture
 Current architecture keeps all the services in 1 app, so through that app we can handle customers, invoices and payments
