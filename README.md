@@ -141,3 +141,11 @@ Due to the time limitation, I couldn't apply all the improvements I would like t
   * Improve logging to have better understanding of the services
   * Create a set of custom metrics per service, so they can be used for the observability of the services and for the scalability
   * Include some tracing markers to the calls between services to be able to trace the interaction between them
+
+## Conclusion
+I've enjoyed a lot the challenge. Kotlin is a great language and I was looking the moment to start working with it. 
+I really hope the challenge covers the minimum requirements to go to next recruitment step. I tried to apply my experience during the last years
+working with microservices in the development and specially in the documentation
+
+Due to my limited time, I could spend around 12-13 hours doing it in 3 days. For creating a real production ready service, I would apply the [future improvements](#future-improvements).
+And for a long time solution I recommend to go for the [new architecture proposal](Architecture_2_0.md)
