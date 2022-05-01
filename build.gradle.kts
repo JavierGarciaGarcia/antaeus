@@ -8,7 +8,7 @@ plugins {
 
 allprojects {
     group = "io.pleo"
-    version = "1.4.0"
+    version = "1.5.0"
 
     apply(plugin = "org.jlleitschuh.gradle.ktlint")
 

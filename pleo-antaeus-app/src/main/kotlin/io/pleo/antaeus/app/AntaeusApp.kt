@@ -69,8 +69,12 @@ fun main() {
         invoiceService = invoiceService
     )
 
-    val scheduledPaymentService = ScheduledPaymentService(billingService)
-    scheduledPaymentService.schedule()
+    val scheduledPaymentService = ScheduledPaymentService(
+        billingService,
+        customerService
+    )
+    val oncePerMonth = "0 0 0 1 *"
+    scheduledPaymentService.schedule(oncePerMonth)
 
     // Create REST web service
     AntaeusRest(

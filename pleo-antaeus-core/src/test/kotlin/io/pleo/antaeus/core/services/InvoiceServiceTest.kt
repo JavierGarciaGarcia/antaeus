@@ -25,7 +25,7 @@ class InvoiceServiceTest {
 
     private fun anInvoicePage(status: InvoiceStatus, isLast: Boolean, pageSize: Int): InvoicePage =
         InvoicePage(
-            invoices = List(pageSize) { Invoice(it, it, Money(BigDecimal.valueOf(1L), Currency.DKK), InvoiceStatus.PENDING) },
+            invoices = List(pageSize) { Invoice(it, it, Money(BigDecimal.valueOf(1L), Currency.DKK), status) },
             isLast = isLast,
             marker = pageSize
         )
