@@ -26,3 +26,30 @@ Another changes we can apply:
 * As an idea to consider will be to use 2 entry points in every service that expose an external API:
   * Expose a REST API to access the service
   * Expose a gRPC API to internal communication
+
+## Storage solution
+For invoice service, having in mind that will be the larger data storage, I would recommend to use [AWS Auora](https://aws.amazon.com/rds/aurora/)
+
+For the proposed solution, I would use a Postgres Aurora cluster and use the following features:
+* Having a scheduled process that will iterate over all the invoices pending to be paid, I would create a cron job to scale the cluster with a specific reader (https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/aurora-replicas-adding.html).
+* Create a [custom endpoint](https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/Aurora.Overview.Endpoints.html#aurora-custom-endpoint-creating) for the new reader instance
+* Using another AWS services, like [AWS Route 53](https://aws.amazon.com/route53/), keep the new custom endpoint accessible with the same name
+
+By doing that we can ensure the read isolation between normal behaviour of the invoice service and the scheduled job. The scheduled job will iterate over a possible large dataset using *keyset pagination* and a new reader instance, 
+so the performance of the cluster won't be affected and won't affect the performance of invoice service
+
+
+## Scalability
+Having an isolated set of services, we can scale them based on their own necessities. E.G. if Invoice Service is heavily used could be scaled more than customer service
+
+### How scale the services
+Based on my experience, using Kubernetes is quite simple to scale up/down a service based on [custom metrics](https://learnk8s.io/autoscaling-apps-kubernetes). 
+In order to been able to do that, each service must expose their own metrics, normally using [Prometheus](https://prometheus.io/) and a [k8s prometheus adapter](https://github.com/kubernetes-sigs/prometheus-adapter)
+
+One important thing is to take care of the status of the database to scale the services. Normally the status of the database is the big forgotten actor in the scalation process. 
+Using [circuit breaker](https://martinfowler.com/bliki/CircuitBreaker.html) pattern is a *reactive* way to protect the database. When the database start failing, we open the circuit as soon as the number of errors have gone over some threshold.
+But by doing that we have affected the database and let it go to a *"dark place"*
+
+In my opinion we should go for a *proactive* way of keeping the database in good shape:
+* Using rate limiters in front of the services, ensuring that the amount of effectively calls that the service is receiving never exceeds the volume we used to design it
+* Scale up/down the database consumers based on database custom metrics. E.G. if the avg of response time of the database starts to increase, we can scale down the database consumers in order to let the database recover

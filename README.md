@@ -100,6 +100,7 @@ The following updates have been maid:
 * Usage of keyset [Keyset pagination](#keyset-pagination)
 * Use krontab library to handle the scheduled execution
 * Include a new architecture proposal [Antaeus v2.0](Architecture_2_0.md)
+* I've included [ktlint](https://github.com/pinterest/ktlint) as linter
 
 ## Endpoints
 * /rest/v1/invoices : get all invoices
@@ -130,3 +131,13 @@ In order to fix that, one solution is use keyset pagination. The base idea is no
 in the query to move between pages.
 The limitation of keyset pagination is the impossibility to access a specific page directly, but since the feature don't require that, 
 the usage of keyset pagination is possible and recommended
+
+## Future improvements
+Due to the time limitation, I couldn't apply all the improvements I would like to do:
+* Extend unit test coverage to the rest of components
+* Create a set of Acceptance tests to cover the behaviour of the billing service
+* Move to in-memory database to a real database, using postgres as solution
+* In order to improve the [3 observability pillars](https://www.oreilly.com/library/view/distributed-systems-observability/9781492033431/ch04.html):
+  * Improve logging to have better understanding of the services
+  * Create a set of custom metrics per service, so they can be used for the observability of the services and for the scalability
+  * Include some tracing markers to the calls between services to be able to trace the interaction between them
