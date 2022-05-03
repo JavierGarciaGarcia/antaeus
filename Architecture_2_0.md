@@ -28,12 +28,12 @@ Another changes we can apply:
   * Expose a gRPC API to internal communication
 
 ## Error handling
-Having in mind the payment process can be handled as a distributed transaction, a way to handle the errors is by using the SAGA pattern, in this case a orchestrated version of the pattern. The process flow could be
+Having in mind the payment process can be handled as a distributed transaction, a way to handle the errors is by using the SAGA pattern, in this case a orchestrated version of the pattern. The process flow could be:
 1. The payment process start by a scheduled job
 2. The payment service will retrieve the list of invoices to process (by calling the invoice API and customer API)
 3. For each invoice, the payment service will call the external payment provider. The result of the operation will be published in a distributed messaging system like [Kafka](https://kafka.apache.org/) or [AWS Kinesis](https://aws.amazon.com/kinesis/)
 4. There will be an orchestrator that will listen the events in the topic. Once it receives an event of payment result, the orchestrator will call the invoice API to update the invoice status
-5. If the invoice API fails and cannot update the status, the invoice service will publish an event in the topic, with that information
+5. If the invoice API fails after some retries and cannot update the status, the invoice service will publish an event in the topic, with that information
 6. The orchestrator will listen the error event and call the payment API to do a rollback over the invoice
 
 ## Storage solution
@@ -59,6 +59,6 @@ One important thing is to take care of the status of the database to scale the s
 Using [circuit breaker](https://martinfowler.com/bliki/CircuitBreaker.html) pattern is a *reactive* way to protect the database. When the database start failing, we open the circuit as soon as the number of errors have gone over some threshold.
 But by doing that we have affected the database and let it go to a *"dark place"*
 
-In my opinion we should go for a *proactive* way of keeping the database in good shape:
+In my opinion we should go for a *proactive way of keeping the database in good shape*:
 * Using rate limiters in front of the services, ensuring that the amount of effectively calls that the service is receiving never exceeds the volume we used to design it
 * Scale up/down the database consumers based on database custom metrics. E.G. if the avg of response time of the database starts to increase, we can scale down the database consumers in order to let the database recover

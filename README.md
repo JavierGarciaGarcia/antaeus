@@ -8,6 +8,9 @@ Welcome to our challenge.
 
 As most "Software as a Service" (SaaS) companies, Pleo needs to charge a subscription fee every month. Our database contains a few invoices for the different markets in which we operate. Your task is to build the logic that will schedule payment of those invoices on the first of the month. While this may seem simple, there is space for some decisions to be taken and you will be expected to justify them.
 
+## Proposed solution
+Go to [solution](#solution)
+
 ## Instructions
 
 Fork this repo with your solution. Ideally, we'd like to see your progression through commits, and don't forget to update the README.md to explain your thought process.
@@ -87,17 +90,17 @@ The code given is structured as follows. Feel free however to modify the structu
 
 Happy hacking 😁!
 
-## Updates in the code
+## Solution
 
-I've spent the last 12 hours working in the challenge following the principles:
+I've spent 14 hours working in the challenge following the principles:
 * TDD
 * Clean Code
 * KISS (Keep It Simple) 
 
 The following updates have been maid:
-* Implement the solution using asynchronous [Why asynchronous programming](#asynchronous) 
-* Include circuit breaker to add a protection layer over the external provider
-* Usage of keyset [Keyset pagination](#keyset-pagination)
+* Implement the solution using asynchronous [Why asynchronous programming](#asynchronous) processing
+* Include *circuit breaker* to add a protection layer over the external provider
+* Usage of  [Keyset pagination](#keyset-pagination)
 * Use krontab library to handle the scheduled execution
 * Include a new architecture proposal [Antaeus v2.0](Architecture_2_0.md)
 * I've included [ktlint](https://github.com/pinterest/ktlint) as linter
@@ -116,7 +119,7 @@ The following updates have been maid:
 ### Asynchronous
 The code has been designed and developed thinking in how the current solution can grow and can be used with real data. 
 Calling a third party component (payment provider) could be something that consume CPU or take time, so using asynchronous 
-programming will help the application to not keeping the main thread waiting and not waste CPU in that
+programming will help the application to not keep the main thread waiting and not waste CPU in that
 
 Among with that, calling an external service is something that could include extra mechanism to protect the external service
 For that, I've decided to include a circuit breaker, so we will give some time to the external service to recover in case of unexpected 
@@ -125,11 +128,13 @@ behavior
 ### Keyset pagination
 For iterating over large datasets in databases the common approach is using pagination, so the application will retrieve pages
 instead of the hole dataset
+
 When the dataset is huge and could be thousands of pages, databases suffer an issue known as "deep pagination issue", meaning that 
 even using pagination to iterate over all the dataset, the databse suffer when tries to access latest pages
 In order to fix that, one solution is use keyset pagination. The base idea is not use the offset pagination but include extra filters
 in the query to move between pages.
-The limitation of keyset pagination is the impossibility to access a specific page directly, but since the feature don't require that, 
+
+The limitation of keyset pagination is the impossibility to access a specific page directly, but since the feature don't require that, in my opinion, 
 the usage of keyset pagination is possible and recommended
 
 ## Future improvements
@@ -144,7 +149,8 @@ Due to the time limitation, I couldn't apply all the improvements I would like t
   * Include some tracing markers to the calls between services to be able to trace the interaction between them
 
 ### Error handling
-Due to time limitations, I couldn't put so much effort in handling database errors. The scenario to cover is once executed the payment an error occurred when the process tries to update database status of the payment
+Due to time limitations, I couldn't put so much effort in handling database errors. The scenario to cover is, once the payment has been executed an error occurred while updating the invoice status 
+in the database
 
 For that scenario I've used the most simple approach, retry unlimited times the update in the database. A very rough approach and not production ready.
 
@@ -152,10 +158,13 @@ For future improvements, I would investigate new paths:
 * Can we do a "rollback" in the payment provider? If so, we can handle the update status errors by doing rollbacks in the payment provider
 * Add an extra layer of complexity by defining event system and using [SAGA](https://www.baeldung.com/cs/saga-pattern-microservices) pattern to handle a distributed transaction. See new architecture proposal [Antaeus v2.0](Architecture_2_0.md) for more details
 
+## New architecture proposal
+See [new architecture proposal](Architecture_2_0.md) for more details
+
 ## Conclusion
-I've enjoyed a lot the challenge. Kotlin is a great language and I was looking the moment to start working with it. 
+I've enjoyed a lot the challenge. Kotlin is a great language, and I was looking the moment to start working with it. 
 I really hope the challenge covers the minimum requirements to go to next recruitment step. I tried to apply my experience during the last years
 working with microservices in the development and specially in the documentation
 
-Due to my limited time, I could spend around 12-13 hours doing it in 3 days. For creating a real production ready service, I would apply the [future improvements](#future-improvements).
-And for a long time solution I recommend to go for the [new architecture proposal](Architecture_2_0.md)
+Due to my limited time, I could spend around 14 hours doing it in 4 days. For creating a real production ready service, I would apply the [future improvements](#future-improvements).
+And for a long time solution I recommend going for the [new architecture proposal](Architecture_2_0.md)

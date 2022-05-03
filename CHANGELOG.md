@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 1.6.0
+* Improve documentation
+* Adding more descriptive error when invalid status
+
 ## 1.5.1
 * Improve database error handling
 

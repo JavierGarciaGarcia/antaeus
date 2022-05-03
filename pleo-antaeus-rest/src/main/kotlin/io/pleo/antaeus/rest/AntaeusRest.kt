@@ -53,7 +53,7 @@ class AntaeusRest(
             }
             exception(StatusNotFoundException::class.java) { _, ctx ->
                 ctx.status(400)
-                ctx.json("Invalid status")
+                ctx.json("Invalid status. The possible states are PAID, PENDING, MISSING_CUSTOMER, CURRENCY_MISMATCH")
             }
             exception(InvoiceNotFoundException::class.java) { _, ctx ->
                 ctx.status(404)
