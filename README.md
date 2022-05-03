@@ -137,10 +137,20 @@ Due to the time limitation, I couldn't apply all the improvements I would like t
 * Extend unit test coverage to the rest of components
 * Create a set of Acceptance tests to cover the behaviour of the billing service
 * Move to in-memory database to a real database, using postgres as solution
+* Improve database error handling
 * In order to improve the [3 observability pillars](https://www.oreilly.com/library/view/distributed-systems-observability/9781492033431/ch04.html):
   * Improve logging to have better understanding of the services
   * Create a set of custom metrics per service, so they can be used for the observability of the services and for the scalability
   * Include some tracing markers to the calls between services to be able to trace the interaction between them
+
+### Error handling
+Due to time limitations, I couldn't put so much effort in handling database errors. The scenario to cover is once executed the payment an error occurred when the process tries to update database status of the payment
+
+For that scenario I've used the most simple approach, retry unlimited times the update in the database. A very rough approach and not production ready.
+
+For future improvements, I would investigate new paths:
+* Can we do a "rollback" in the payment provider? If so, we can handle the update status errors by doing rollbacks in the payment provider
+* Add an extra layer of complexity by defining event system and using [SAGA](https://www.baeldung.com/cs/saga-pattern-microservices) pattern to handle a distributed transaction. See new architecture proposal [Antaeus v2.0](Architecture_2_0.md) for more details
 
 ## Conclusion
 I've enjoyed a lot the challenge. Kotlin is a great language and I was looking the moment to start working with it. 

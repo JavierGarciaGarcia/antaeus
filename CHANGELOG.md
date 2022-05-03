@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## 1.5.1
+* Improve database error handling
+
+## 1.5.0
+* Improve scheduler perfomance
+
+## 1.4.0
+* Add ktlint and fix linting errors
+
 ## 1.3.1
 * fix issue in customer payments endpoint
 * add new endpoint to pay all invoices for a specific type for a client

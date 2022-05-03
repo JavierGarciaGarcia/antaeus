@@ -5,6 +5,7 @@ import io.mockk.mockk
 import io.mockk.verify
 import io.pleo.antaeus.core.exceptions.CurrencyMismatchException
 import io.pleo.antaeus.core.exceptions.CustomerNotFoundException
+import io.pleo.antaeus.core.exceptions.DatabaseException
 import io.pleo.antaeus.core.exceptions.NetworkException
 import io.pleo.antaeus.core.external.PaymentProvider
 import io.pleo.antaeus.data.constants.DEFAULT_PAGE_SIZE
@@ -159,6 +160,22 @@ class BillingServiceTest {
         }
     }
 
+    @Test
+    fun `should try and retry when database exception calling payment provider and mark as paid`() {
+        val invoice = anInvoice(1, InvoiceStatus.PENDING)
+        expectDatabaseExceptionAndSuccess(invoice)
+
+        val result = billingService.processInvoice(invoice.id)
+
+        Assertions.assertEquals(true, result)
+        verify(exactly = 2) {
+            invoiceService.updateStatus(invoice.id, InvoiceStatus.PAID)
+        }
+        verify(exactly = 1) {
+            paymentProvider.charge(invoice)
+        }
+    }
+
     private fun expectListOfPendingInvoicesSuitableForBeingPaid(status: InvoiceStatus): InvoicePage {
         val expectedInvoices = aPageOfInvoices(aListOfInvoices(status = status), true)
         every {
@@ -291,6 +308,21 @@ class BillingServiceTest {
         every {
             invoiceService.updateStatus(invoice.id, InvoiceStatus.PAID)
         } returns invoice
+    }
+
+    private fun expectDatabaseExceptionAndSuccess(invoice: Invoice) {
+        every {
+            paymentProvider.charge(invoice)
+        } returns true
+        every {
+            invoiceService.fetch(invoice.id)
+        } returns invoice
+        every {
+            invoiceService.updateStatus(invoice.id, InvoiceStatus.PENDING)
+        } returns invoice
+        every {
+            invoiceService.updateStatus(invoice.id, InvoiceStatus.PAID)
+        } throws DatabaseException() andThen invoice
     }
 
     private fun expectNetworkExceptionAlways(invoice: Invoice) {

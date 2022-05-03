@@ -1,10 +1,13 @@
 package io.pleo.antaeus.core.services
 
+import com.github.michaelbull.retry.retry
+import com.github.michaelbull.retry.policy.fullJitterBackoff
 import io.github.resilience4j.circuitbreaker.CircuitBreaker
 import io.github.resilience4j.kotlin.circuitbreaker.circuitBreaker
 import io.pleo.antaeus.core.constants.NUMBER_OF_ATTEMPTS
 import io.pleo.antaeus.core.exceptions.CurrencyMismatchException
 import io.pleo.antaeus.core.exceptions.CustomerNotFoundException
+import io.pleo.antaeus.core.exceptions.DatabaseException
 import io.pleo.antaeus.core.exceptions.NetworkException
 import io.pleo.antaeus.core.external.PaymentProvider
 import io.pleo.antaeus.data.constants.DEFAULT_PAGE_SIZE
@@ -75,7 +78,7 @@ class BillingService(
             .map { processInvoice(it) }
             .retryWhen() { cause, attempt ->
                 delay(getMilisDelay(attempt))
-                attempt < NUMBER_OF_ATTEMPTS && cause is NetworkException
+                shouldRetry(attempt, cause)
             }
             .circuitBreaker(CircuitBreaker.ofDefaults("invoicePayment"))
             .catch {
@@ -108,7 +111,11 @@ class BillingService(
 
     private fun getMilisDelay(attempt: Long) = (MIN_DELAY * attempt).coerceAtMost(MAX_DELAY)
 
-    private fun updateInvoiceStatus(id: Int, status: InvoiceStatus = InvoiceStatus.PAID) = invoiceService.updateStatus(id, status)
+    private fun updateInvoiceStatus(id: Int, status: InvoiceStatus = InvoiceStatus.PAID) = runBlocking {
+        retry(fullJitterBackoff(base = 10L, max = 1000L)) {
+            invoiceService.updateStatus(id, status)
+        }
+    }
 
     private fun paymentResponse2InvoiceStatus(paymentResponse: Boolean): InvoiceStatus = when (paymentResponse) {
         true -> InvoiceStatus.PAID
@@ -119,5 +126,11 @@ class BillingService(
         is CustomerNotFoundException -> InvoiceStatus.MISSING_CUSTOMER
         is CurrencyMismatchException -> InvoiceStatus.CURRENCY_MISMATCH
         else -> InvoiceStatus.PENDING
+    }
+
+    private fun shouldRetry(attempt: Long, cause: Throwable): Boolean {
+        val isExpectedException = cause is NetworkException
+        val retriesOverThreshold = attempt >= NUMBER_OF_ATTEMPTS
+        return !retriesOverThreshold && isExpectedException
     }
 }

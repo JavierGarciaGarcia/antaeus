@@ -12,6 +12,7 @@ dependencies {
     implementation("ch.qos.logback:logback-classic:1.2.6")
     implementation("io.github.resilience4j:resilience4j-kotlin:1.7.1")
     implementation("io.github.resilience4j:resilience4j-circuitbreaker:1.7.1")
+    implementation("com.michael-bull.kotlin-retry:kotlin-retry:1.0.9")
 
     api(project(":pleo-antaeus-models"))
 }
