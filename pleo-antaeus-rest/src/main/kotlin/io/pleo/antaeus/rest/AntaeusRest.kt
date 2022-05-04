@@ -18,7 +18,6 @@ import io.pleo.antaeus.rest.exceptions.StatusNotFoundException
 import mu.KotlinLogging
 
 private val logger = KotlinLogging.logger {}
-private val thisFile: () -> Unit = {}
 
 class AntaeusRest(
     private val invoiceService: InvoiceService,

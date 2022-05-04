@@ -30,6 +30,7 @@ class BillingServiceTest {
         for (invoice in invoicesPage.invoices) {
             verify {
                 paymentProvider.charge(invoice)
+                invoiceService.updateStatus(invoice.id, InvoiceStatus.STARTED_PAYMENT)
                 invoiceService.updateStatus(invoice.id, InvoiceStatus.PAID)
                 invoiceService.fetchPageByStatus(status = InvoiceStatus.PENDING, pageSize = any(), marker = any())
             }
@@ -43,6 +44,7 @@ class BillingServiceTest {
         for (invoice in invoices) {
             verify {
                 paymentProvider.charge(invoice)
+                invoiceService.updateStatus(invoice.id, InvoiceStatus.STARTED_PAYMENT)
                 invoiceService.updateStatus(invoice.id, InvoiceStatus.PAID)
             }
             verify(exactly = 2) {
@@ -58,6 +60,7 @@ class BillingServiceTest {
         for (invoice in invoices) {
             verify {
                 paymentProvider.charge(invoice)
+                invoiceService.updateStatus(invoice.id, InvoiceStatus.STARTED_PAYMENT)
                 invoiceService.updateStatus(invoice.id, InvoiceStatus.PAID)
             }
             verify(exactly = 2) {
@@ -76,6 +79,16 @@ class BillingServiceTest {
     }
 
     @Test
+    fun `should not call paymentProvider with an invoide started to be paid`() {
+        val invoice = expectStartedPaymentInvoice(1)
+        billingService.processInvoice(invoice.id)
+        verify(exactly = 0) {
+            paymentProvider.charge(invoice)
+            invoiceService.updateStatus(invoice.id, any())
+        }
+    }
+
+    @Test
     fun `should update invoice status to missing customer to a invoice list when payment service throws missing customer exception`() {
         val invoice = anInvoice(1, InvoiceStatus.PENDING)
         expectMissingCustomerException(invoice)
@@ -85,6 +98,7 @@ class BillingServiceTest {
         Assertions.assertEquals(false, result)
         verify {
             paymentProvider.charge(invoice)
+            invoiceService.updateStatus(invoice.id, InvoiceStatus.STARTED_PAYMENT)
             invoiceService.updateStatus(invoice.id, InvoiceStatus.MISSING_CUSTOMER)
         }
     }
@@ -99,6 +113,7 @@ class BillingServiceTest {
         Assertions.assertEquals(false, result)
         verify {
             paymentProvider.charge(invoice)
+            invoiceService.updateStatus(invoice.id, InvoiceStatus.STARTED_PAYMENT)
             invoiceService.updateStatus(invoice.id, InvoiceStatus.MISSING_CUSTOMER)
         }
     }
@@ -113,6 +128,7 @@ class BillingServiceTest {
         Assertions.assertEquals(false, result)
         verify {
             paymentProvider.charge(invoice)
+            invoiceService.updateStatus(invoice.id, InvoiceStatus.STARTED_PAYMENT)
             invoiceService.updateStatus(invoice.id, InvoiceStatus.CURRENCY_MISMATCH)
         }
     }
@@ -127,6 +143,7 @@ class BillingServiceTest {
         Assertions.assertEquals(false, result)
         verify {
             paymentProvider.charge(invoice)
+            invoiceService.updateStatus(invoice.id, InvoiceStatus.STARTED_PAYMENT)
             invoiceService.updateStatus(invoice.id, InvoiceStatus.CURRENCY_MISMATCH)
         }
     }
@@ -140,6 +157,7 @@ class BillingServiceTest {
 
         Assertions.assertEquals(true, result)
         verify {
+            invoiceService.updateStatus(invoice.id, InvoiceStatus.STARTED_PAYMENT)
             invoiceService.updateStatus(invoice.id, InvoiceStatus.PAID)
         }
         verify(exactly = 2) {
@@ -158,6 +176,10 @@ class BillingServiceTest {
         verify(exactly = 4) {
             paymentProvider.charge(invoice)
         }
+        verify {
+            invoiceService.updateStatus(invoice.id, InvoiceStatus.STARTED_PAYMENT)
+            invoiceService.updateStatus(invoice.id, InvoiceStatus.PENDING)
+        }
     }
 
     @Test
@@ -172,6 +194,7 @@ class BillingServiceTest {
             invoiceService.updateStatus(invoice.id, InvoiceStatus.PAID)
         }
         verify(exactly = 1) {
+            invoiceService.updateStatus(invoice.id, InvoiceStatus.STARTED_PAYMENT)
             paymentProvider.charge(invoice)
         }
     }
@@ -190,6 +213,9 @@ class BillingServiceTest {
             } returns true
             every {
                 invoiceService.updateStatus(invoice.id, InvoiceStatus.PAID)
+            } returns invoice
+            every {
+                invoiceService.updateStatus(invoice.id, InvoiceStatus.STARTED_PAYMENT)
             } returns invoice
         }
         return expectedInvoices
@@ -221,6 +247,9 @@ class BillingServiceTest {
             every {
                 invoiceService.updateStatus(invoice.id, InvoiceStatus.PAID)
             } returns invoice
+            every {
+                invoiceService.updateStatus(invoice.id, InvoiceStatus.STARTED_PAYMENT)
+            } returns invoice
         }
         return invoicesList
     }
@@ -251,12 +280,23 @@ class BillingServiceTest {
             every {
                 invoiceService.updateStatus(invoice.id, InvoiceStatus.PAID)
             } returns invoice
+            every {
+                invoiceService.updateStatus(invoice.id, InvoiceStatus.STARTED_PAYMENT)
+            } returns invoice
         }
         return invoicesList
     }
 
     private fun expectAlreadyPaidInvoice(id: Int): Invoice {
         val paidInvoice = anInvoice(id, InvoiceStatus.PAID)
+        every {
+            invoiceService.fetch(id)
+        } returns paidInvoice
+        return paidInvoice
+    }
+
+    private fun expectStartedPaymentInvoice(id: Int): Invoice {
+        val paidInvoice = anInvoice(id, InvoiceStatus.STARTED_PAYMENT)
         every {
             invoiceService.fetch(id)
         } returns paidInvoice
@@ -277,6 +317,9 @@ class BillingServiceTest {
         every {
             invoiceService.updateStatus(invoice.id, InvoiceStatus.MISSING_CUSTOMER)
         } returns invoice
+        every {
+            invoiceService.updateStatus(invoice.id, InvoiceStatus.STARTED_PAYMENT)
+        } returns invoice
     }
 
     private fun expectCurrencyMismatchException(invoice: Invoice) {
@@ -293,6 +336,9 @@ class BillingServiceTest {
         every {
             invoiceService.updateStatus(invoice.id, InvoiceStatus.CURRENCY_MISMATCH)
         } returns invoice
+        every {
+            invoiceService.updateStatus(invoice.id, InvoiceStatus.STARTED_PAYMENT)
+        } returns invoice
     }
 
     private fun expectNetworkExceptionAndSuccess(invoice: Invoice) {
@@ -308,6 +354,9 @@ class BillingServiceTest {
         every {
             invoiceService.updateStatus(invoice.id, InvoiceStatus.PAID)
         } returns invoice
+        every {
+            invoiceService.updateStatus(invoice.id, InvoiceStatus.STARTED_PAYMENT)
+        } returns invoice
     }
 
     private fun expectDatabaseExceptionAndSuccess(invoice: Invoice) {
@@ -319,6 +368,9 @@ class BillingServiceTest {
         } returns invoice
         every {
             invoiceService.updateStatus(invoice.id, InvoiceStatus.PENDING)
+        } returns invoice
+        every {
+            invoiceService.updateStatus(invoice.id, InvoiceStatus.STARTED_PAYMENT)
         } returns invoice
         every {
             invoiceService.updateStatus(invoice.id, InvoiceStatus.PAID)
@@ -334,6 +386,9 @@ class BillingServiceTest {
         } returns invoice
         every {
             invoiceService.updateStatus(invoice.id, InvoiceStatus.PENDING)
+        } returns invoice
+        every {
+            invoiceService.updateStatus(invoice.id, InvoiceStatus.STARTED_PAYMENT)
         } returns invoice
     }
 

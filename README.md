@@ -75,6 +75,8 @@ For future improvements, I would investigate new paths:
 * Can we do a "rollback" in the payment provider? If so, we can handle the update status errors by doing rollbacks in the payment provider
 * Add an extra layer of complexity by defining event system and using [SAGA](https://www.baeldung.com/cs/saga-pattern-microservices) pattern to handle a distributed transaction. See new architecture proposal [Antaeus v2.0](Architecture_2_0.md) for more details
 
+For covering the payment twice, i've created a new invoice state called STARTED_PAYMENT, so once the invoice process starts, the invoice is updated and cannot be paid if the state is STARTED_PAYMENT
+
 ### New architecture proposal
 See [new architecture proposal](Architecture_2_0.md) for more details
 

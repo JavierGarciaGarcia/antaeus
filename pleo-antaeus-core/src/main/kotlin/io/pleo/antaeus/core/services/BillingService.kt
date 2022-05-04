@@ -1,13 +1,12 @@
 package io.pleo.antaeus.core.services
 
-import com.github.michaelbull.retry.retry
 import com.github.michaelbull.retry.policy.fullJitterBackoff
+import com.github.michaelbull.retry.retry
 import io.github.resilience4j.circuitbreaker.CircuitBreaker
 import io.github.resilience4j.kotlin.circuitbreaker.circuitBreaker
 import io.pleo.antaeus.core.constants.NUMBER_OF_ATTEMPTS
 import io.pleo.antaeus.core.exceptions.CurrencyMismatchException
 import io.pleo.antaeus.core.exceptions.CustomerNotFoundException
-import io.pleo.antaeus.core.exceptions.DatabaseException
 import io.pleo.antaeus.core.exceptions.NetworkException
 import io.pleo.antaeus.core.external.PaymentProvider
 import io.pleo.antaeus.data.constants.DEFAULT_PAGE_SIZE
@@ -93,12 +92,19 @@ class BillingService(
     private fun processInvoice(invoice: Invoice): Boolean {
         var result: Boolean
         logger.info { "Processing invoice ${invoice.id}" }
+        if (isInvoiceBeingPaid(invoice)) {
+            logger.info { "The invoice ${invoice.id} is started to be paid, ignoring it" }
+            return true
+        } else {
+            updateInvoiceStatus(invoice.id, InvoiceStatus.STARTED_PAYMENT)
+        }
         var newStatus: InvoiceStatus
         try {
             result = paymentProvider.charge(invoice)
             newStatus = paymentResponse2InvoiceStatus(result)
         } catch (e: NetworkException) {
             logger.error { "Network error processing ${invoice.id}" }
+            updateInvoiceStatus(invoice.id, InvoiceStatus.PENDING)
             throw e
         } catch (e: Exception) {
             newStatus = exception2InvoiceStatus(e)
@@ -108,6 +114,8 @@ class BillingService(
         logger.info { "Processed invoice ${invoice.id} with result $result" }
         return result
     }
+
+    private fun isInvoiceBeingPaid(invoice: Invoice): Boolean = invoice.status == InvoiceStatus.STARTED_PAYMENT
 
     private fun getMilisDelay(attempt: Long) = (MIN_DELAY * attempt).coerceAtMost(MAX_DELAY)
 
